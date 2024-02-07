@@ -45,31 +45,15 @@ def make_output_plots(lrs, y_true, output_dir: Union[pathlib.Path, str] = '.', i
             print('Treating LRs that are None as 1')
             lrs = np.nan_to_num(lrs, nan=1)
 
-    # Write metrics to disk.
-    FN = sum(1 for lr, y in zip(lrs, y_true) if lr <= 1 and y == 1)
-    FP = sum(1 for lr, y in zip(lrs, y_true) if lr >= 1 and y == 0)
-
-    lrs1, lrs0 = Xy_to_Xn(lrs, y_true)
-    TP = len(lrs0) - FP
-    TN = len(lrs1) - FN
     cllr = lir.metrics.cllr(lrs, y_true)
     cllr_min = lir.metrics.cllr_min(lrs, y_true)
     cllr_cal = cllr - cllr_min
-    print(cllr)
-
-    # f1 = 2*(precision*specificity)/(precision+specificity)
 
     with open(output_dir / "cllr.txt", "w") as f:
         f.write(f'cllr: {cllr:.3f}\n')
         f.write(f'cllr min: {cllr_min:.3f}\n')
         f.write(f'cllr cal: {cllr_cal:.3f}\n')
         f.write(f'total: {len(y_true):.3f}\n')
-        f.write(f'TP: {TP:.3f}\n')
-        f.write(f'TN: {TN:.3f}\n')
-        f.write(f'FP: {FP:.3f}\n')
-        f.write(f'FN: {FN:.3f}\n')
-
-
 
     # Save visualizations to disk.
     with lir.plotting.savefig(str(output_dir / "pav.png")) as ax:

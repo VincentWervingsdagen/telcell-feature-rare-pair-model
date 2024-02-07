@@ -8,7 +8,6 @@ from telcell.auxilliary_models.rare_pair.corrected_priors import CorrectedPriors
 from telcell.auxilliary_models.rare_pair.coverage_model import CoverageData, \
     ExtendedAngleDistanceClassificationCoverageModel
 from telcell.auxilliary_models.rare_pair.predictor import Predictor
-from telcell.auxilliary_models.rare_pair.transformers import BaseTransformer
 from telcell.auxilliary_models.rare_pair.utils import Bin
 from telcell.data.models import Track
 from telcell.models import Model
@@ -41,7 +40,7 @@ class RarePairModel(Model):
     def __init__(self, bins: List[Bin], coverage_models: dict):
         self.bins = bins
         self.max_delay = self.bins[-1][1]
-        self.predictor = Predictor(coverage_models) 
+        self.predictor = Predictor(coverage_models)
 
     @staticmethod
     def filter_track(track: Track, filter: Mapping) -> Track:
