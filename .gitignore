@@ -1,0 +1,13 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# automatic backup files
+*~
+
+.idea/
+venv/
+scratch/
+
+.coverage
+telcell.egg-info/
