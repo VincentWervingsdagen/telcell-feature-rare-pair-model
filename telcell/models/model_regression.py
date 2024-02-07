@@ -18,7 +18,7 @@ def features (pairs: list):
         labels = []
         for row in pairs:
                 switches = get_switches(row[0],row[1])
-                if (len(switches) != 0):    
+                if (len(switches) != 0):
                         labels += [int(is_colocated(row[0],row[1]))] * len(switches)
                         training_features += list(map(lambda x: (x.distance, x.time_difference.total_seconds()+0.000001,
                                                 x.distance/(x.time_difference.total_seconds()+0.000001)), switches))
@@ -30,19 +30,19 @@ def binned_features(pairs: list, scores: list):
         binned_features = []
         labels = []
         for row in pairs:
-                switches = get_switches(row[0],row[1])
+                switches = get_switches(row[0], row[1])
                 if (len(switches) != 0):
                         hist, _ = np.histogram(scores[index:index+len(switches)], bins=10,
-                                range=(0, 1),density=True)
+                                range=(0, 1), density=True)
                         binned_features.append(hist)
-                        labels.append(int(is_colocated(row[0],row[1])))
+                        labels.append(int(is_colocated(row[0], row[1])))
                         index += len(switches)
 
         return np.array(binned_features), np.array(labels)
       
 
 class Regression(Model):
-    
+
     def __init__(self, training_data: List[Track]):
         modelling, calibration = train_test_split(training_data, test_size=0.5, random_state=1)
 
@@ -66,8 +66,8 @@ class Regression(Model):
         # First logistic regression on switches
         self.estimator1 = LogisticRegression()
         self.estimator1.fit(modelling_features, modelling_labels)
-        scores = self.estimator1.predict_proba(modelling_features)[:,1]
-        
+        scores = self.estimator1.predict_proba(modelling_features)[:, 1]
+
         # Get binned switch scores per track
         modelling_features, modelling_labels = binned_features(modelling, scores)
 
@@ -76,13 +76,13 @@ class Regression(Model):
         self.estimator2.fit(modelling_features, modelling_labels)
 
         # Apply Second model to test features to obtain final track scores for densities
-        scores = self.estimator1.predict_proba(calibration_features)[:,1]
-        calibration_features, calibration_labels = binned_features(calibration, scores) 
-        final = self.estimator2.predict_proba(calibration_features)[:,1]
+        scores = self.estimator1.predict_proba(calibration_features)[:, 1]
+        calibration_features, calibration_labels = binned_features(calibration, scores)
+        final = self.estimator2.predict_proba(calibration_features)[:, 1]
 
         self.calibrator = lir.ELUBbounder(lir.KDECalibrator())
         self.calibrator.fit(final, calibration_labels)
-        
+
 
     def predict_lr(self, track_a: Track, track_b: Track, **kwargs) -> Tuple[float, Optional[Mapping]]:
         # read in pairs and extract features
@@ -98,12 +98,12 @@ class Regression(Model):
         eval_features_scale = self.scaler.transform(eval_features)
 
         # Apply first regression model and bin results
-        scores = self.estimator1.predict_proba(eval_features_scale)[:,1]
+        scores = self.estimator1.predict_proba(eval_features_scale)[:, 1]
         hist, _ = np.histogram(scores, bins=10,
                 range=(0, 1), density=True)
 
         # Apply second regression model to obtain final score for track pair
-        X = self.estimator2.predict_proba(hist.reshape(1, -1))[:,1]
+        X = self.estimator2.predict_proba(hist.reshape(1, -1))[:, 1]
         lr = self.calibrator.transform(X)
 
         return float(lr), None
