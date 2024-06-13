@@ -75,8 +75,7 @@ def state_space_Omega(cell_file,bounding_box,antenna_type,level='postal2') -> np
     # Will return a np.array with possible states that the phones can visit.
     df_cell = pd.read_csv(cell_file)
     #drop useless columns
-    df_cell = df_cell.drop(['Samenvatting','Vermogen', 'Frequentie','Veilige afstand','id','objectid','WOONPLAATSNAAM','DATUM_PLAATSING',
-           'DATUM_INGEBRUIKNAME','GEMNAAM','Hoogte','Hoofdstraalrichting','sat_code'],axis=1)
+    df_cell = df_cell[['HOOFDSOORT','X','Y','POSTCODE']]
     #drop types except the antenna_type
     df_cell = df_cell.loc[df_cell['HOOFDSOORT'] == antenna_type]
          #Transform to wgs84
@@ -273,20 +272,18 @@ def important_states_cut_distance_5(matrix_normal,matrix_burner) -> float:
     return max(distances)
 
 
-def important_states_cut_distance(matrix_normal,matrix_burner,data_normal) -> float:
+def important_states_cut_distance(matrix_normal,matrix_burner,count_data) -> float:
     # Expects two matrices that need to be compared.
     # First computes which states have enough observations based on rule of thumb estimation of a binomial distribution.
     # Then it calculates the maximum cut distance for the states that have good enough estimates.
     # Returns a float value.
-    observation,count_observations = np.unique(data_normal['cellinfo.postal_code'],return_counts=True)
-    B = stats.chi2.ppf(1-0.05 / len(observation),1)
+    B = stats.chi2.ppf(1-0.05 / len(count_data),1)
     t = stats.norm.ppf(1-0.05/2)
-    important_states = observation[count_observations>10*B/(t**2)]
-    if not important_states.any():
+    index_important_states = np.where(count_data>10*B/(t**2))
+    if not index_important_states[0].any():
         raise ValueError('There is not enough data to make a sufficient estimate for the markov chain.')
     distances = []
     states = matrix_normal.index
-    index_important_states = np.where(states.isin(important_states))
     for element in itertools.product(range(2),repeat=len(index_important_states)):
         individual = np.zeros(len(states))
         individual[index_important_states] = element

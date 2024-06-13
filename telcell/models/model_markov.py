@@ -13,11 +13,11 @@ from telcell.models import Model
 class MarkovChain(Model):
     bounding_box: list
     prior_chain: pd.DataFrame
-    series_Markov_chains: pd.Series(pd.DataFrame)
+    df_Markov_chains: pd.DataFrame()
     data: pd.DataFrame
     distance: str
     state_space_level: str
-    state_space: str
+    state_space: [str]
     prior_type: str
     markov_type: str
     loops_allowed: bool
@@ -42,7 +42,6 @@ class MarkovChain(Model):
         self.bounding_box = bounding_box
         self.distance = distance
         self.state_space_level=state_space_level
-        self.state_space=state_space
         self.prior_type=prior_type
         self.markov_type=markov_type
         self.loops_allowed = loops_allowed
@@ -57,13 +56,19 @@ class MarkovChain(Model):
         # Construct the Markov chains for each device.
         list_Markov_chains = []
         list_devices = []
+        list_counts = []
         grouped = self.data.groupby(['device'])
 
         for device, track in grouped:
             list_Markov_chains.append(self.construct_markov_chain(track['cellinfo.postal_code'],markov_type,loops_allowed))
             list_devices.append(device[0])
+            observed_states,count_values = np.unique(track['cellinfo.postal_code'],return_counts=True)
+            count_vector = np.zeros(self.number_of_states)
+            indices = np.where(np.in1d(self.state_space, observed_states))[0]
+            count_vector[indices] = count_values
+            list_counts.append(count_vector)
 
-        self.series_Markov_chains = pd.Series(list_Markov_chains,index=list_devices)
+        self.df_Markov_chains = pd.DataFrame(data={'markov_chains':list_Markov_chains,'count_data':list_counts},index=list_devices)
 
         df_reference = self.reference_set(list_devices,distance)
 
@@ -109,7 +114,7 @@ class MarkovChain(Model):
         else:
             raise ValueError('The specified Markov chain type is not implemented. Please use discrete or continuous.')
 
-    def calculate_score(self,distance,matrix1,matrix2):
+    def calculate_score(self,distance,matrix1,matrix2,count_data):
         # Calculate the distance
         if distance == 'cut_distance':
             return MC.genetic_cut_distance(matrix_normal=matrix1,matrix_burner=matrix2)
@@ -122,7 +127,7 @@ class MarkovChain(Model):
         elif distance == 'important_cut_distance_5':
             return MC.important_states_cut_distance_5(matrix_normal=matrix1,matrix_burner=matrix2)
         elif distance == 'important_cut_distance':
-            return MC.important_states_cut_distance(matrix_normal=matrix1,matrix_burner=matrix2,data_normal=self.data[self.data['device']==phone1])
+            return MC.important_states_cut_distance(matrix_normal=matrix1,matrix_burner=matrix2,count_data=count_data)
         else:
             raise ValueError(
                 'The specified distance function is not implemented. Please use cut-distance, freq-distance, frobenius, trace or important_cut_distance.')
@@ -142,7 +147,9 @@ class MarkovChain(Model):
 
         tqdm.pandas()
         df_reference['score'] = df_reference.progress_apply(lambda row: self.calculate_score(distance,
-                                                                                             self.series_Markov_chains.loc[row['phone1']],self.series_Markov_chains.loc[row['phone2']]),axis=1)
+                                                                                             self.df_Markov_chains.loc[row['phone1']].loc['markov_chains'],
+                                                                                             self.df_Markov_chains.loc[row['phone2']].loc['markov_chains'],
+                                                                                             self.df_Markov_chains.loc[row['phone1']].loc['count_data']),axis=1)
 
         return df_reference
 
@@ -152,6 +159,7 @@ class MarkovChain(Model):
             track_b: Track,
             **kwargs,
     ) -> Tuple[Optional[float], Optional[Mapping]]:
+
         coords_a = [m.get_postal_value for m in track_a.measurements]
         coords_b = [m.get_postal_value for m in track_b.measurements]
         if self.state_space_level == 'antenna':
@@ -166,10 +174,15 @@ class MarkovChain(Model):
             coords_a = [element[0:2] for element in coords_a]
             coords_b = [element[0:2] for element in coords_b]
 
+        observed_states, count_values = np.unique(coords_a, return_counts=True)
+        count_vector = np.zeros(self.number_of_states)
+        indices = np.where(np.in1d(self.state_space, observed_states))[0]
+        count_vector[indices] = count_values
+
         markov_chain_a = self.construct_markov_chain(pd.Series(coords_a),self.markov_type,self.loops_allowed)
         markov_chain_b = self.construct_markov_chain(pd.Series(coords_b),self.markov_type,self.loops_allowed)
 
-        score = self.calculate_score(self.distance,markov_chain_a,markov_chain_b)
+        score = self.calculate_score(self.distance,markov_chain_a,markov_chain_b,count_vector)
         lr = self.kde_calibrator.transform(score)
 
         return float(lr),None

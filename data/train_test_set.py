@@ -10,7 +10,7 @@ df = pd.read_csv('{}/output_cell_{}.csv'.format(name_of_file,name_of_file))
 agents = df['owner'].unique()
 
 # Step 3: Split the agents into training and test sets
-train_agents, test_agents = train_test_split(agents, test_size=0.8, random_state=40)
+train_agents, test_agents = train_test_split(agents, test_size=0.2, random_state=40)
 
 # Step 4: Create training and test DataFrames
 train_df = df[df['owner'].isin(train_agents)]
