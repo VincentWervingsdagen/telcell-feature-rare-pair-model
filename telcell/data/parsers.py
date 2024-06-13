@@ -53,6 +53,7 @@ def parse_measurements_csv(path: Union[str, Path]) -> List[Track]:
                     coords=Point(lat=float(row['cellinfo.wgs84.lat']),
                                  lon=float(row['cellinfo.wgs84.lon'])),
                     timestamp=datetime.fromisoformat(row['timestamp']),
+                    postal_code=row['cellinfo.postal_code'],
                     # For now, we just store the entire `row` under `extra`,
                     # even though this leads to some duplicate data.
                     # TODO: Make separate (telecom) (specific) parser
@@ -60,7 +61,7 @@ def parse_measurements_csv(path: Union[str, Path]) -> List[Track]:
                            #'mnc': row['cell'].split('-')[1],
                            'azimuth': row['cellinfo.azimuth_degrees'],
                            'antenna_id': row.get('cellinfo.antenna_id', None),
-                           'zipcode': row.get('cellinfo.zipcode', None),
+                           'postal_code': row.get('cellinfo.postal_code', None),
                            'city': row.get('cellinfo.city', None)}
                 ) for row in group
             ]

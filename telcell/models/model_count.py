@@ -4,6 +4,7 @@ from shapely.geometry import Point
 from telcell.data.models import Track
 from telcell.models import Model
 
+from collections import Counter
 import numpy as np
 import geopandas as gpd
 
@@ -32,23 +33,45 @@ class Count(Model):
         if not track_a or not track_b:
             return None, None
 
-        coords_a = gpd.GeoDataFrame(geometry=[Point(m.coords.lon, m.coords.lat) for m in track_a.measurements])
-        coords_a.set_crs(epsg=4326, inplace=True)
+        coords_a_1 = [m.get_postal_value for m in track_a.measurements]
+        coords_b_1 = [m.get_postal_value for m in track_b.measurements]
 
-        coords_b = gpd.GeoDataFrame(geometry=[Point(m.coords.lon, m.coords.lat) for m in track_b.measurements])
-        coords_b.set_crs(epsg=4326, inplace=True)
+        coords_a_1 = [element[0:3] for element in coords_a_1]
+        coords_b_1 = [element[0:3] for element in coords_b_1]
 
-        # Spatial join
-        joined_a = gpd.sjoin(coords_a, self.postcode_df, predicate='within', how='right')
-        joined_b = gpd.sjoin(coords_b, self.postcode_df, predicate='within', how='right')
+        # Union of the two vectors
+        union = sorted(set(coords_a_1) | set(coords_b_1))
 
-        # Count points per polygon
-        counts_a = joined_a.groupby(self.postcode_df.geometry).size()
-        counts_a = [count - 1 for count in counts_a.to_list()]
-        counts_b = joined_b.groupby(self.postcode_df.geometry).size()
-        counts_b = [count - 1 for count in counts_b.to_list()]
-    
-        lr = self.alternate_formula(self.prior, counts_a, counts_b)
+        # Create count dictionaries
+        count_vector1 = Counter(coords_a_1)
+        count_vector2 = Counter(coords_b_1)
+
+        # Create count vectors
+        count_vector1 = [count_vector1[x] for x in union]
+        count_vector2 = [count_vector2[x] for x in union]
+
+        prior = [1 for x in union]
+
+        lr = self.alternate_formula(prior, count_vector1, count_vector2)
+
+        # coords_a = gpd.GeoDataFrame(geometry=[Point(m.coords.lon, m.coords.lat) for m in track_a.measurements])
+        # coords_a.set_crs(epsg=4326, inplace=True)
+        #
+        # coords_b = gpd.GeoDataFrame(geometry=[Point(m.coords.lon, m.coords.lat) for m in track_b.measurements])
+        # coords_b.set_crs(epsg=4326, inplace=True)
+        #
+        # #Spatial join
+        # joined_a = gpd.sjoin(coords_a, self.postcode_df, predicate='within', how='right')
+        # joined_b = gpd.sjoin(coords_b, self.postcode_df, predicate='within', how='right')
+        #
+        #
+        # # Count points per polygon
+        # counts_a = joined_a.groupby(self.postcode_df.geometry).size()
+        # counts_a = [count - 1 for count in counts_a.to_list()]
+        # counts_b = joined_b.groupby(self.postcode_df.geometry).size()
+        # counts_b = [count - 1 for count in counts_b.to_list()]
+        #
+        # lr = self.alternate_formula(self.prior, counts_a, counts_b)
 
         return float(lr), None
 
@@ -61,12 +84,12 @@ class Count(Model):
         left = 1
         right = 1
 
-        for k in range(1, K):
+        for k in range(0, K):
             if (r2[k] >= 1):
-                for s in range(0,(r2[k]-1)):
+                for s in range(0,(r2[k])):
                     left = left * (1+(r1[k]/(alpha[k]+s)))
 
-        for s in range(0,(N2-1)):
+        for s in range(0,(N2)):
             right = right*(1-(N1/(c+N1+s)))
 
         return left*right

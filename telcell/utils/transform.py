@@ -44,12 +44,10 @@ def slice_track_pairs_to_intervals(track_pairs: Iterator[Tuple[Track, Track]],
     """
 
     for track_a, track_b in track_pairs:
-        # For our `start` we use 5:00 AM on the day before the start of our
-        # measurements.
         earliest = next(iter(track_a)).timestamp
         start = datetime.combine(
-            earliest.date() - timedelta(days=1),
-            time(5, tzinfo=earliest.tzinfo),
+            earliest.date(),
+            time(0, tzinfo=earliest.tzinfo),
         )
 
         # Find all intervals of an hour represented in the data.

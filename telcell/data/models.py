@@ -104,12 +104,14 @@ class Measurement:
 
     :param coords: The WGS84 latitude and longitude coordinates
     :param timestamp: The time of registration
+    :param postal_code: The postal code of the cell tower
     :param extra: Additional metadata related to the source that registered
             this measurement. These could for example inform the accuracy or
             uncertainty of the measured WGS84 coordinates.
     """
     coords: Point
     timestamp: datetime
+    postal_code: str
     extra: Mapping[str, Any]
 
     @property
@@ -127,6 +129,10 @@ class Measurement:
     @property
     def xy(self) -> Tuple[float, float]:
         return self.coords.convert_to_rd().xy
+
+    @property
+    def get_postal_value(self):
+        return self.postal_code
 
     def __str__(self):
         return f"<{self.timestamp}: ({self.lat}, {self.lon})>"
@@ -148,6 +154,12 @@ class Track:
     owner: str
     device: str
     measurements: Sequence[Measurement]
+
+    def get_owner(self):
+        return self.owner
+
+    def get_device(self):
+        return self.device
 
     def __len__(self) -> int:
         return len(self.measurements)

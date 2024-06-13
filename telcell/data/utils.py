@@ -1,5 +1,11 @@
 import datetime
 from typing import Iterable, List, Tuple
+import pandas as pd
+from tqdm import tqdm
+import geopy
+from geopy.extra.rate_limiter import RateLimiter
+import csv
+
 
 from telcell.data.models import Track
 
@@ -62,3 +68,35 @@ def extract_intervals(
 
     # TODO: yield the intervals one by one instead of taking them in memory?
     return sorted(intervals)
+
+
+def get_postal_code(reverse, lat, lon):
+    try:
+        location = reverse((lat, lon), exactly_one=True)
+        return location.raw['address']['postcode'].replace(" ", "")
+    except(KeyError, AttributeError):
+        return 'placeholder'
+
+
+def add_postal_code(observation_file):
+    df = pd.read_csv(observation_file)
+
+    geolocator = geopy.Nominatim(user_agent='postal_code_converter1')
+    reverse = RateLimiter(geolocator.reverse, min_delay_seconds=2)
+
+    tqdm.pandas()
+    unique_coordinates = df[['cellinfo.wgs84.lat', 'cellinfo.wgs84.lon']].drop_duplicates()
+    unique_coordinates['cellinfo.postal_code'] = unique_coordinates.progress_apply(
+        lambda row: get_postal_code(reverse=reverse, lat=row['cellinfo.wgs84.lat'], lon=row['cellinfo.wgs84.lon']), axis=1)
+
+    df = pd.merge(df, unique_coordinates, on=['cellinfo.wgs84.lat', 'cellinfo.wgs84.lon'], how='left')
+    df = df.loc[df['cellinfo.postal_code'] != 'placeholder']
+    df.to_csv(observation_file)
+
+
+def check_header_for_postal_code(csv_file_path):
+    print(csv_file_path)
+    with open(csv_file_path, mode='r', newline='') as file:
+        reader = csv.reader(file)
+        header = next(reader)  # Read the first row which is the header
+        return 'cellinfo.postal_code' in header
