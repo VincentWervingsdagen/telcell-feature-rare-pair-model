@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from collections import defaultdict
 from tqdm import tqdm
+import gc
 
 import lir
 
@@ -150,6 +151,11 @@ class MarkovChain(Model):
                                                                                              self.df_Markov_chains.loc[row['phone1']].loc['markov_chains'],
                                                                                              self.df_Markov_chains.loc[row['phone2']].loc['markov_chains'],
                                                                                              self.df_Markov_chains.loc[row['phone1']].loc['count_data']),axis=1)
+        # Clear the matrices from memory
+        del self.df_Markov_chains
+
+        # Force garbage collection
+        gc.collect()
 
         return df_reference
 

@@ -7,7 +7,7 @@ from telcell.models import Model
 from collections import Counter
 import numpy as np
 import geopandas as gpd
-
+import math
 
 class Count(Model):
     """
@@ -22,35 +22,31 @@ class Count(Model):
     vectors are produced by the same underlying multinomial distribution (with same parameters)
     vs. two different distributions. 
     """
-
-
-    def __init__(self, postcode_file, bounding_box):
-        self.postcode_df = gpd.read_file(postcode_file, bounding_box)
-        self.prior = [1/len(self.postcode_df)] * len(self.postcode_df)
-
+    def __init__(self):
+        print('No initialization needed.')
 
     def predict_lr(self, track_a: Track, track_b: Track, **kwargs) -> Tuple[float, Optional[Mapping]]:
         if not track_a or not track_b:
             return None, None
 
-        coords_a_1 = [m.get_postal_value for m in track_a.measurements]
-        coords_b_1 = [m.get_postal_value for m in track_b.measurements]
+        coords_a = [m.get_postal_value for m in track_a.measurements]
+        coords_b = [m.get_postal_value for m in track_b.measurements]
 
-        coords_a_1 = [element[0:3] for element in coords_a_1]
-        coords_b_1 = [element[0:3] for element in coords_b_1]
+        coords_a = [element[0:3] for element in coords_a]
+        coords_b = [element[0:3] for element in coords_b]
 
         # Union of the two vectors
-        union = sorted(set(coords_a_1) | set(coords_b_1))
+        union = sorted(set(coords_a) | set(coords_b))
 
         # Create count dictionaries
-        count_vector1 = Counter(coords_a_1)
-        count_vector2 = Counter(coords_b_1)
+        count_vector1 = Counter(coords_a)
+        count_vector2 = Counter(coords_b)
 
         # Create count vectors
         count_vector1 = [count_vector1[x] for x in union]
         count_vector2 = [count_vector2[x] for x in union]
 
-        prior = [1 for x in union]
+        prior = np.ones(len(union))
 
         lr = self.alternate_formula(prior, count_vector1, count_vector2)
 
@@ -81,15 +77,18 @@ class Count(Model):
         N2 = np.sum(r2)
         c = np.sum(alpha)
         K = len(alpha)
-        left = 1
-        right = 1
+        left = np.ones(N2,dtype=np.float64)
+        right = np.ones(N2,dtype=np.float64)
+        n=0
 
         for k in range(0, K):
             if (r2[k] >= 1):
                 for s in range(0,(r2[k])):
-                    left = left * (1+(r1[k]/(alpha[k]+s)))
+                    left[n] = (1+(r1[k]/(alpha[k]+s)))
+                    n=n+1
 
         for s in range(0,(N2)):
-            right = right*(1-(N1/(c+N1+s)))
+            right[s] = (1-(N1/(c+N1+s)))
 
-        return left*right
+        result = np.multiply(left,right)
+        return min(max(np.prod(result),np.finfo(np.float64).eps),np.finfo(np.float64).max)
