@@ -1,10 +1,10 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-name_of_file = 'time_dependent'
+name_of_file = 'common_work'
 
 # Step 1: Read the CSV file into a DataFrame
-df = pd.read_csv('{}/output_cell_{}.csv'.format(name_of_file,name_of_file))
+df = pd.read_csv('Vincent/{}/output_cell.csv'.format(name_of_file))
 
 # Step 2: Get the unique agents
 agents = df['owner'].unique()
@@ -17,7 +17,7 @@ train_df = df[df['owner'].isin(train_agents)]
 test_df = df[df['owner'].isin(test_agents)]
 
 # Step 5: Save the split DataFrames into separate CSV files
-train_df.to_csv('{}/training_set_{}.csv'.format(name_of_file,name_of_file), index=False)
-test_df.to_csv('{}/test_set_{}.csv'.format(name_of_file,name_of_file), index=False)
+train_df.to_csv('Vincent/{}/training_set_{}.csv'.format(name_of_file,name_of_file), index=False)
+test_df.to_csv('Vincent/{}/test_set_{}.csv'.format(name_of_file,name_of_file), index=False)
 
 print("Training and test sets created successfully.")

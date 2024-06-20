@@ -142,6 +142,45 @@ class Measurement:
                      *(_extra for _extra in self.extra.values())))
 
 
+@dataclass(eq=True, frozen=True)
+class Measurement_old:
+    """
+    A single measurement of a device at a certain place and time.
+
+    :param coords: The WGS84 latitude and longitude coordinates
+    :param timestamp: The time of registration
+    :param extra: Additional metadata related to the source that registered
+            this measurement. These could for example inform the accuracy or
+            uncertainty of the measured WGS84 coordinates.
+    """
+    coords: Point
+    timestamp: datetime
+    extra: Mapping[str, Any]
+
+    @property
+    def lat(self):
+        return self.coords.lat
+
+    @property
+    def lon(self):
+        return self.coords.lon
+
+    @property
+    def latlon(self):
+        return self.coords.latlon
+
+    @property
+    def xy(self) -> Tuple[float, float]:
+        return self.coords.convert_to_rd().xy
+
+    def __str__(self):
+        return f"<{self.timestamp}: ({self.lat}, {self.lon})>"
+
+    def __hash__(self):
+        return hash((self.lat, self.lon, self.timestamp.date(),
+                     *(_extra for _extra in self.extra.values())))
+
+
 @dataclass
 class Track:
     """

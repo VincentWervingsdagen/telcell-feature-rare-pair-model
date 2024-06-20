@@ -208,7 +208,7 @@ class Grid(EmptyGrid):
         """
         if not (self.northeast.x > point.x > self.southwest.x) \
                 or not (self.northeast.y > point.y > self.southwest.y):
-            raise ValueError(f"Point {point} is not within a section of Grid {self}")
+            return 0.
 
         x_center = min(self.x_coords, key=lambda x: abs(x - point.x))
         y_center = min(self.y_coords, key=lambda y: abs(y - point.y))

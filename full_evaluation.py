@@ -23,10 +23,9 @@ def main():
     """Main function that deals with the whole process. Three steps: loading,
     transforming and evaluation."""
 
-    scenario = 'baseline'
-    test_files = "data/{}/test_set_{}.csv".format(scenario,scenario)
-    train_files = "data/{}/training_set_{}.csv".format(scenario,scenario)
-    file_names = [scenario]
+    scenario = 'common_work'
+    test_files = "data/Vincent/{}/test_set_{}.csv".format(scenario,scenario)
+    train_files = "data/Vincent/{}/training_set_{}.csv".format(scenario,scenario)
 
     all_different_source = False
 
@@ -44,7 +43,7 @@ def main():
     markov_1 = ['Omega', 'postal2', 'frobenius']
 
     # args for Markov chain approach 2
-    markov_2 = ['Omega','postal3','important_cut_distance']
+    markov_2 = ['Omega', 'postal3', 'important_cut_distance']
 
     # Check whether the files have 'cellinfo.postal_code' column.
     for file in [train_files,test_files]: # Makes sure that the column cellinfo.postal_code is available
@@ -54,14 +53,17 @@ def main():
             add_postal_code(file)
 
     #Specify the models that we want to evaluate.
-    models_days = [RarePairModel(bins=bins, coverage_models=coverage_models)]
+    models_days = [
+                   RarePairModel(bins=bins, coverage_models=coverage_models),
+                   Count()
+    ]
 
     models_period = [
-                     Count(),
                      MarkovChain(training_set=train_files,cell_file=cell_file,bounding_box=bounding_box,
                                  state_space=markov_1[0],state_space_level=markov_1[1],distance=markov_1[2]),
                      MarkovChain(training_set=train_files, cell_file=cell_file, bounding_box=bounding_box,
                                  state_space=markov_2[0], state_space_level=markov_2[1], distance=markov_2[2]),
+                     Count(),
     ]
 
     # Loading data

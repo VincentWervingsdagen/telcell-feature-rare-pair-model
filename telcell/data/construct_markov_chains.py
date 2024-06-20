@@ -83,8 +83,8 @@ def state_space_Omega(cell_file,bounding_box,antenna_type,level='postal2') -> np
                                                                                                    df_cell['Y'])
     # Only keep cell towers in bounding box
     df_cell = df_cell.loc[
-            (df_cell['lon'] >= bounding_box[0]) & (df_cell['lon'] <= bounding_box[2])
-            & (df_cell['lat'] >= bounding_box[1]) & (df_cell['lat'] <= bounding_box[3])]
+            (df_cell['lon'] >= bounding_box[0]-0.01) & (df_cell['lon'] <= bounding_box[2]+0.01)
+            & (df_cell['lat'] >= bounding_box[1]-0.01) & (df_cell['lat'] <= bounding_box[3]+0.01)]
 
     if level == 'antenna':
         return np.sort(np.unique(df_cell['POSTCODE'].dropna()))
@@ -281,7 +281,7 @@ def important_states_cut_distance(matrix_normal,matrix_burner,count_data) -> flo
     t = stats.norm.ppf(1-0.05/2)
     index_important_states = np.where(count_data>10*B/(t**2))
     if not index_important_states[0].any():
-        raise ValueError('There is not enough data to make a sufficient estimate for the markov chain.')
+        important_states_cut_distance_5(matrix_normal,matrix_burner) # None of the states work, so just try the 5 states with the most observations.
     distances = []
     states = matrix_normal.index
     for element in itertools.product(range(2),repeat=len(index_important_states)):

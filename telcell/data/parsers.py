@@ -38,7 +38,9 @@ def parse_measurements_csv(path: Union[str, Path]) -> List[Track]:
         #   2. device
         #   3. timestamp
         # If this is not the case, we first have to call `sorted()` here.
-        measurements_sorted = sorted(reader,
+        filtered_rows = [row for row in reader if row['cellinfo.postal_code']]
+
+        measurements_sorted = sorted(filtered_rows,
                                      key=lambda row: (row["owner"],
                                                       row["device"],
                                                       row["timestamp"]))

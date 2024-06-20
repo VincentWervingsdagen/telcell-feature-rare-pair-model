@@ -1,4 +1,6 @@
 from typing import Tuple, Optional, Mapping
+
+import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 from collections import defaultdict
@@ -78,6 +80,8 @@ class MarkovChain(Model):
 
         self.kde_calibrator = lir.ELUBbounder(self.kde_calibrator)
         self.kde_calibrator.fit(np.array(df_reference['score']), np.array(df_reference['hypothesis']))
+
+
 
     def construct_state_space(self,state_space,state_space_level,antenna_type):
         # Construct the state space
