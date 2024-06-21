@@ -25,7 +25,7 @@ def main():
 
 
     train = 'baseline'
-    test = 'common_work'
+    test = 'location_dependent'
 
     train_files = "data/Vincent/{}/training_set_{}.csv".format(train,train)
     test_files = "data/Vincent/{}/test_set_{}.csv".format(test,test)

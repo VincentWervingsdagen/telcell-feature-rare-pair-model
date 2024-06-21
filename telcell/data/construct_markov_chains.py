@@ -161,7 +161,6 @@ def discrete_markov_chain(track,prior,states,loops_allowed=True) -> np.array:
         matrix.loc[track[current], track[next_]] += 1
     # Add prior.
     matrix = matrix + prior
-    print(matrix)
 
     if loops_allowed == True:
         pass
