@@ -111,10 +111,17 @@ def state_space_observations(df) -> np.array:
     return states
 
 
-def uniform_prior(number_of_states,states) -> pd.DataFrame:
+def jeffrey_prior(number_of_states,states) -> pd.DataFrame:
     # Expects the states of the markov chain.
     # Will return the Jeffrey prior: A number_of_states x number_of_states matrix filled with 1/number_of_states.
     return pd.DataFrame(1/number_of_states,index=states,columns=states)
+
+
+def all_ones_prior(number_of_states,states) -> pd.DataFrame:
+    # Expects the states of the markov chain.
+    # Will return the Jeffrey prior: A number_of_states x number_of_states matrix filled with 1/number_of_states.
+    return pd.DataFrame(1,index=states,columns=states)
+
 
 
 def zero_prior(states) -> pd.DataFrame:
@@ -150,10 +157,11 @@ def discrete_markov_chain(track,prior,states,loops_allowed=True) -> np.array:
     # Will return a matrix with the movement of the device.
     # First construct count matrix
     matrix = pd.DataFrame(0.0,index=states,columns=states)
-    for current, next_ in zip(track.index[:-1], track.index[1:]):
+    for current, next_ in itertools.pairwise(track.index):
         matrix.loc[track[current], track[next_]] += 1
     # Add prior.
     matrix = matrix + prior
+    print(matrix)
 
     if loops_allowed == True:
         pass

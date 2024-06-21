@@ -32,7 +32,7 @@ class MarkovChain(Model):
             training_set,
             cell_file,
             bounding_box,
-            state_space='observations',
+            state_space='Omega',
             state_space_level='postal2',
             distance='frobenius',
             antenna_type = 'LTE',
@@ -45,7 +45,6 @@ class MarkovChain(Model):
         self.bounding_box = bounding_box
         self.distance = distance
         self.state_space_level=state_space_level
-        self.prior_type=prior_type
         self.markov_type=markov_type
         self.loops_allowed = loops_allowed
 
@@ -96,8 +95,10 @@ class MarkovChain(Model):
 
     def construct_prior(self,prior_type):
         # Construct the prior
-        if prior_type == 'uniform':  # Returns a nxn matrix with each value 1/n
-            self.prior_chain = MC.uniform_prior(number_of_states=self.number_of_states, states=self.state_space)
+        if prior_type == 'jeffrey':  # Returns a nxn matrix with each value 1/n
+            self.prior_chain = MC.jeffrey_prior(number_of_states=self.number_of_states, states=self.state_space)
+        elif prior_type == 'all_ones':  # Returns a nxn matrix with each value 1
+            self.prior_chain = MC.all_ones_prior(number_of_states=self.number_of_states, states=self.state_space)
         elif prior_type == 'zero':  # Returns a nxn matrix based on the distance between the antennas/postal/postal3 codes.
             self.prior_chain = MC.zero_prior(states=self.state_space)
         elif prior_type == 'distance':  # Returns a nxn matrix based on the distance between the antennas/postal/postal3 codes.
@@ -107,7 +108,7 @@ class MarkovChain(Model):
             self.prior_chain = MC.population_prior()
         else:
             raise ValueError(
-                'The specified prior movement distribution is not implemented. Please use uniform, distance or population.')
+                'The specified prior movement distribution is not implemented. Please use jeffrey, all_ones, zero, distance or population.')
 
     def construct_markov_chain(self,track,markov_type,loops_allowed):
         # Construct the markov chains
