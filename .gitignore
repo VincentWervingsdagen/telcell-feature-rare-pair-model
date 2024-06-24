@@ -8,6 +8,8 @@ __pycache__/
 .idea/
 venv/
 scratch/
+data/Vincent/
+data/Louise/
 
 .coverage
 telcell.egg-info/
