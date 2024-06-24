@@ -6,6 +6,7 @@ import numpy as np
 from collections import defaultdict
 from tqdm import tqdm
 import gc
+import re
 
 import lir
 
@@ -141,12 +142,19 @@ class MarkovChain(Model):
     def reference_set(self,list_devices,distance):
         # Group the phones together per owner, this allows for owners having multiple phones.
         owner_groups = defaultdict(list)
+
         for device in list_devices:
-            owner, dev = device.split('_')
+            if '_' in device:
+                owner, dev = device.split('_')
+            else:
+                match = re.match(r"([a-zA-Z]+)(\d+)", device)
+                if match:
+                    owner = match.group(1)
+                else:
+                    TypeError('Type is not in the expected format. We expected formats like 10_2 or Sophie1.')
             owner_groups[owner].append(device)
 
-        grouped_devices = list(owner_groups.values())
-        pairs_with_labels_H_p, pairs_with_labels_H_d = MC.create_pairs(np.concatenate(grouped_devices))
+        pairs_with_labels_H_p, pairs_with_labels_H_d = MC.create_pairs(owner_groups)
         list_phones = np.vstack([*pairs_with_labels_H_p,*pairs_with_labels_H_d])
         df_reference = pd.DataFrame({'phone1':[item[0] for item in list_phones],'phone2':[item[1] for item in list_phones],
                                 'hypothesis':[*len(pairs_with_labels_H_p)*[1],*len(pairs_with_labels_H_d)*[0]]}, columns=['phone1','phone2','hypothesis'])

@@ -24,8 +24,8 @@ def main():
     transforming and evaluation."""
 
 
-    train = 'baseline'
-    test = 'location_dependent'
+    train = 'test'
+    test = 'test'
 
     train_files = "data/Vincent/{}/training_set_{}.csv".format(train,train)
     test_files = "data/Vincent/{}/test_set_{}.csv".format(test,test)
@@ -94,7 +94,7 @@ def main():
 
     # Specify the main output_dir. Each model/parameter combination gets a
     # directory in the main output directory.
-    main_output_dir = Path(f'scratch/{train}-{test}')
+    main_output_dir = Path(f'scratch/test/{train}-{test}')
 
     # Specify the variable parameters for evaluation in the variable 'grid'.
     # This grid is a dict of iterables and all combinations will be used
@@ -136,7 +136,7 @@ def main():
 
     # Specify the main output_dir. Each model/parameter combination gets a
     # directory in the main output directory.
-    main_output_dir = Path(f'scratch/{train}-{test}')
+    main_output_dir = Path(f'scratch/test/{train}-{test}')
 
     grid = {'model': models_period}
     for variable, parameters, (predicted_lrs, y_true, extras) in \

@@ -6,6 +6,8 @@ from scipy.linalg import eig
 from tqdm import tqdm
 import geopy
 from geopy.extra.rate_limiter import RateLimiter
+from itertools import combinations, product
+
 
 
 from pyproj import Transformer
@@ -178,7 +180,7 @@ def continuous_markov_chain():
     raise NotImplementedError
 
 
-def create_pairs(list_device) -> (list[list],list[list]):
+def create_pairs(owner_dict) -> (list[list],list[list]):
     # Expects a list filled with items.
     # Return a list with all possible pairs of items of a list.
     # Will only return (a,b) and not (b,a), where a,b are items in the list.
@@ -186,18 +188,18 @@ def create_pairs(list_device) -> (list[list],list[list]):
     pairs_with_labels_H_p = []
     pairs_with_labels_H_d = []
 
-    # Iterate over each pair of devices
-    for i in range(len(list_device)):
-        for j in range(i + 1, len(list_device)):
-            # Split the device strings to get the owner and device numbers
-            owner_i, device_i = list_device[i].split('_')
-            owner_j, device_j = list_device[j].split('_')
+    keys = list(owner_dict.keys())
+    # Generate pairs within the same group
+    for key in keys:
+        items = owner_dict[key]
+        pairs_with_labels_H_p.extend(list(combinations(items, 2)))
 
-            # Determine the label based on the owners
-            if owner_i == owner_j:
-                pairs_with_labels_H_p.append([list_device[i], list_device[j]])
-            else:
-                pairs_with_labels_H_d.append([list_device[i], list_device[j]])
+    # Generate pairs across different groups
+    for i in range(len(keys)):
+        for j in range(i + 1, len(keys)):
+            items_i = owner_dict[keys[i]]
+            items_j = owner_dict[keys[j]]
+            pairs_with_labels_H_d.extend(list(product(items_i, items_j)))
 
     return pairs_with_labels_H_p, pairs_with_labels_H_d
 
