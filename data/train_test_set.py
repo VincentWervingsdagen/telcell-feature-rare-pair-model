@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-name_of_file = 'test'
+name_of_file = 'baseline_normal_coverage'
 
 # Step 1: Read the CSV file into a DataFrame
 df = pd.read_csv('Vincent/{}/output_cell.csv'.format(name_of_file))

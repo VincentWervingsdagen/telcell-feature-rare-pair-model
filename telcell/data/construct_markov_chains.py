@@ -119,11 +119,10 @@ def jeffrey_prior(number_of_states,states) -> pd.DataFrame:
     return pd.DataFrame(1/number_of_states,index=states,columns=states)
 
 
-def all_ones_prior(number_of_states,states) -> pd.DataFrame:
+def all_ones_prior(states) -> pd.DataFrame:
     # Expects the states of the markov chain.
     # Will return the Jeffrey prior: A number_of_states x number_of_states matrix filled with 1/number_of_states.
     return pd.DataFrame(1,index=states,columns=states)
-
 
 
 def zero_prior(states) -> pd.DataFrame:
@@ -153,7 +152,7 @@ def population_prior():
     raise NotImplementedError
 
 
-def discrete_markov_chain(track,prior,states,loops_allowed=True) -> np.array:
+def discrete_markov_chain(track,prior,states,loops_allowed=True,return_count_vector=False,return_count_matrix=False) -> np.array:
     # Expects the observations from a single phone, a prior distribution and the states.
     # One option is to allow self loops. Recommendation is to always put this as true.
     # Will return a matrix with the movement of the device.
@@ -162,6 +161,9 @@ def discrete_markov_chain(track,prior,states,loops_allowed=True) -> np.array:
     for current, next_ in itertools.pairwise(track.index):
         matrix.loc[track[current], track[next_]] += 1
     # Add prior.
+    count_vector = matrix.sum(axis=1)
+    count_matrix = matrix
+
     matrix = matrix + prior
 
     if loops_allowed == True:
@@ -173,7 +175,7 @@ def discrete_markov_chain(track,prior,states,loops_allowed=True) -> np.array:
     # Normalise
     matrix = matrix/matrix.apply(func='sum',axis=0)
     matrix_normal = np.transpose(matrix)
-    return matrix_normal
+    return matrix_normal,count_vector,count_matrix
 
 
 def continuous_markov_chain():
@@ -265,13 +267,12 @@ def genetic_cut_distance(matrix_normal,matrix_burner) -> float:
     return (1/len(states))*cut_distance(best_ind,matrix_normal, matrix_burner,states)[0]
 
 
-def important_states_cut_distance_5(matrix_normal,matrix_burner) -> float:
+def important_states_cut_distance_5(matrix_normal,matrix_burner,count_data) -> float:
     # Expects two matrices that need to be compared.
     # Looks at the 5 most important states based on the stationary distribution.
     # Then it calculates the maximum cut distance for all possible combinations of these 5 states.
     # Returns a float value.
-    stationary_distribution = calculate_stationary_distribution(matrix_normal)
-    index_important_states = np.argsort(stationary_distribution)[-5:]
+    index_important_states = np.argsort(count_data)[-5:]
     distances = []
     states = matrix_normal.index
     for element in itertools.product(range(2),repeat=5):
@@ -298,28 +299,6 @@ def important_states_cut_distance(matrix_normal,matrix_burner,count_data) -> flo
         individual[index_important_states] = element
         distances.append(cut_distance(individual,matrix_normal,matrix_burner,states)[0])
     return max(distances)
-
-
-def calculate_stationary_distribution(transition_matrix) -> np.array:
-    # Expects a nxn transition matrix.
-    # Returns the stationary distribution.
-
-    # Ensure the transition matrix is a square matrix
-    assert transition_matrix.shape[0] == transition_matrix.shape[1], "Transition matrix must be square"
-
-    # Compute the eigenvalues and right eigenvectors
-    eigenvalues, eigenvectors = eig(transition_matrix.T)
-
-    # Find the index of the eigenvalue 1 (stationary distribution)
-    stationary_index = np.argmin(np.abs(eigenvalues - 1))
-
-    # Extract the corresponding eigenvector
-    stationary_vector = np.real(eigenvectors[:, stationary_index])
-
-    # Normalize the stationary vector to sum to 1
-    stationary_distribution = stationary_vector / stationary_vector.sum()
-
-    return stationary_distribution
 
 
 def calculate_conductance(individual,matrix,states,stationary_distribution,number_of_states) -> tuple:
@@ -354,12 +333,12 @@ def calculate_freq_distance(matrix_normal,matrix_burner,stationary_distribution,
     return max(result)
 
 
-def frequent_transition_distance(matrix_normal,matrix_burner) -> float:
+def frequent_transition_distance(matrix_normal,matrix_burner,count_data) -> float:
     # Expects two nxn matrices.
     # Calculates the frequent transition distance by first approximating the conductance with a genetic algorithm.
     # Then it calculates the distance.
     # Returns a float.
-    stationary_distribution = calculate_stationary_distribution(matrix_normal)
+    stationary_distribution = count_data.sum()
     states = matrix_normal.index
 
     try:
@@ -399,6 +378,23 @@ def frequent_transition_distance(matrix_normal,matrix_burner) -> float:
     distance = calculate_freq_distance(matrix_normal=matrix_normal,matrix_burner=matrix_burner,stationary_distribution=stationary_distribution,conductance=conductance,number_of_states=len(states))
 
     return distance
+
+
+def GLR(matrix_normal,count_matrix_burner) -> float:
+    # Uses the bayesian estimate of the burner phone instead of the MLE estimate.
+    # This is to avoid computational errors by avoiding np.log(0).
+    # Expects the matrix for the normal and burner phone. Also expects the count matrix for the burner phone.
+    row_sum = count_matrix_burner.sum(axis=1)
+    number_of_states = count_matrix_burner.shape[1]
+    MLE = count_matrix_burner.copy()
+    for index in row_sum.index:
+        if row_sum.loc[index] == 0:  # Use iloc to access row_sum by index
+            MLE.loc[index, :] = np.ones(number_of_states) / number_of_states
+        else:
+            MLE.loc[index, :] = MLE.loc[index, :] / row_sum.loc[index]
+    log_matrix = np.where(MLE > 0, np.log(np.divide(MLE,matrix_normal)), 0)
+    statistic = np.multiply(count_matrix_burner,log_matrix)
+    return statistic.sum().sum()
 
 
 def frobenius_norm(matrix_normal,matrix_burner) -> float:

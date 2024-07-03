@@ -1,5 +1,6 @@
 from typing import Tuple, Optional, Mapping
 
+from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -26,6 +27,7 @@ class MarkovChain(Model):
     markov_type: str
     loops_allowed: bool
     kde_calibrator: lir.KDECalibrator()
+    output_histogram_path: Path
 
 
     def __init__(
@@ -33,13 +35,15 @@ class MarkovChain(Model):
             training_set,
             cell_file,
             bounding_box,
+            output_histogram_path,
             state_space='Omega',
             state_space_level='postal2',
             distance='frobenius',
             antenna_type = 'LTE',
             prior_type = 'uniform',
             markov_type = 'discrete',
-            loops_allowed = True
+            loops_allowed = True,
+            response_ELUB = 'y'
     ) -> None:
         # Set global parameters
         self.cell_file = cell_file
@@ -48,6 +52,7 @@ class MarkovChain(Model):
         self.state_space_level=state_space_level
         self.markov_type=markov_type
         self.loops_allowed = loops_allowed
+        self.output_histogram_path = output_histogram_path
 
         # Transform the data to a dataframe with owner, device, timestamp, postal_code
         self.data = MC.transform_data(training_set,state_space_level)
@@ -60,28 +65,27 @@ class MarkovChain(Model):
         list_Markov_chains = []
         list_devices = []
         list_counts = []
+        list_count_matrices = []
         grouped = self.data.groupby(['device'])
 
         for device, track in grouped:
-            list_Markov_chains.append(self.construct_markov_chain(track['cellinfo.postal_code'],markov_type,loops_allowed))
+            matrix,count_vector,count_matrix = self.construct_markov_chain(track['cellinfo.postal_code'],markov_type,loops_allowed)
+            list_Markov_chains.append(matrix)
             list_devices.append(device[0])
-            observed_states,count_values = np.unique(track['cellinfo.postal_code'],return_counts=True)
-            count_vector = np.zeros(self.number_of_states)
-            indices = np.where(np.in1d(self.state_space, observed_states))[0]
-            count_vector[indices] = count_values
             list_counts.append(count_vector)
+            list_count_matrices.append(count_matrix)
 
-        self.df_Markov_chains = pd.DataFrame(data={'markov_chains':list_Markov_chains,'count_data':list_counts},index=list_devices)
+        self.df_Markov_chains = pd.DataFrame(data={'markov_chains':list_Markov_chains,'count_data':list_counts,'count_matrices':list_count_matrices},index=list_devices)
 
         df_reference = self.reference_set(list_devices,distance)
 
         self.kde_calibrator = lir.KDECalibrator(bandwidth='silverman')
-        self.kde_calibrator.fit(np.array(df_reference['score']), np.array(df_reference['hypothesis']))
 
-        self.kde_calibrator = lir.ELUBbounder(self.kde_calibrator)
-        self.kde_calibrator.fit(np.array(df_reference['score']), np.array(df_reference['hypothesis']))
-
-
+        if response_ELUB == 'n':
+            self.kde_calibrator.fit(np.array(df_reference['score']), np.array(df_reference['hypothesis']))
+        else:
+            self.kde_calibrator = lir.ELUBbounder(self.kde_calibrator)
+            self.kde_calibrator.fit(np.array(df_reference['score']), np.array(df_reference['hypothesis']))
 
     def construct_state_space(self,state_space,state_space_level,antenna_type):
         # Construct the state space
@@ -99,7 +103,7 @@ class MarkovChain(Model):
         if prior_type == 'jeffrey':  # Returns a nxn matrix with each value 1/n
             self.prior_chain = MC.jeffrey_prior(number_of_states=self.number_of_states, states=self.state_space)
         elif prior_type == 'all_ones':  # Returns a nxn matrix with each value 1
-            self.prior_chain = MC.all_ones_prior(number_of_states=self.number_of_states, states=self.state_space)
+            self.prior_chain = MC.all_ones_prior(states=self.state_space)
         elif prior_type == 'zero':  # Returns a nxn matrix based on the distance between the antennas/postal/postal3 codes.
             self.prior_chain = MC.zero_prior(states=self.state_space)
         elif prior_type == 'distance':  # Returns a nxn matrix based on the distance between the antennas/postal/postal3 codes.
@@ -121,20 +125,22 @@ class MarkovChain(Model):
         else:
             raise ValueError('The specified Markov chain type is not implemented. Please use discrete or continuous.')
 
-    def calculate_score(self,distance,matrix1,matrix2,count_data):
+    def calculate_score(self,distance,matrix1,matrix2,count_vector=None,count_matrix=None):
         # Calculate the distance
         if distance == 'cut_distance':
             return MC.genetic_cut_distance(matrix_normal=matrix1,matrix_burner=matrix2)
         elif distance == 'freq_distance':
-            return MC.frequent_transition_distance(matrix_normal=matrix1, matrix_burner=matrix2)
+            return MC.frequent_transition_distance(matrix_normal=matrix1, matrix_burner=matrix2,count_data=count_vector)
         elif distance == 'frobenius':
             return MC.frobenius_norm(matrix_normal=matrix1,matrix_burner=matrix2)
         elif distance == 'trace':
             return MC.trace_norm(matrix_normal=matrix1,matrix_burner=matrix2)
         elif distance == 'important_cut_distance_5':
-            return MC.important_states_cut_distance_5(matrix_normal=matrix1,matrix_burner=matrix2)
+            return MC.important_states_cut_distance_5(matrix_normal=matrix1,matrix_burner=matrix2,count_data=count_vector)
         elif distance == 'important_cut_distance':
-            return MC.important_states_cut_distance(matrix_normal=matrix1,matrix_burner=matrix2,count_data=count_data)
+            return MC.important_states_cut_distance(matrix_normal=matrix1,matrix_burner=matrix2,count_data=count_vector)
+        elif distance == 'GLR':
+            return MC.GLR(matrix_normal=matrix1,count_matrix_burner=count_matrix)
         else:
             raise ValueError(
                 'The specified distance function is not implemented. Please use cut-distance, freq-distance, frobenius, trace or important_cut_distance.')
@@ -163,7 +169,17 @@ class MarkovChain(Model):
         df_reference['score'] = df_reference.progress_apply(lambda row: self.calculate_score(distance,
                                                                                              self.df_Markov_chains.loc[row['phone1']].loc['markov_chains'],
                                                                                              self.df_Markov_chains.loc[row['phone2']].loc['markov_chains'],
-                                                                                             self.df_Markov_chains.loc[row['phone1']].loc['count_data']),axis=1)
+                                                                                             count_vector=self.df_Markov_chains.loc[row['phone1']].loc['count_data'],
+                                                                                             count_matrix=self.df_Markov_chains.loc[row['phone2']].loc['count_matrices']),axis=1)
+
+        plt.hist(df_reference[df_reference['hypothesis'] == 1]['score'])
+        plt.savefig(self.output_histogram_path/f'{self.distance}_scores_prosecution.png')
+        plt.clf()
+
+        plt.hist(df_reference[df_reference['hypothesis'] == 0]['score'])
+        plt.savefig(self.output_histogram_path/f'{self.distance}_scores_defense.png')
+        plt.clf()
+
         # Clear the matrices from memory
         del self.df_Markov_chains
 
@@ -193,15 +209,10 @@ class MarkovChain(Model):
             coords_a = [element[0:2] for element in coords_a]
             coords_b = [element[0:2] for element in coords_b]
 
-        observed_states, count_values = np.unique(coords_a, return_counts=True)
-        count_vector = np.zeros(self.number_of_states)
-        indices = np.where(np.in1d(self.state_space, observed_states))[0]
-        count_vector[indices] = count_values
+        markov_chain_a, count_vector, _ = self.construct_markov_chain(pd.Series(coords_a),self.markov_type,self.loops_allowed)
+        markov_chain_b, _, count_matrix = self.construct_markov_chain(pd.Series(coords_b),self.markov_type,self.loops_allowed)
+        score = self.calculate_score(self.distance, markov_chain_a, markov_chain_b,count_vector,count_matrix)
 
-        markov_chain_a = self.construct_markov_chain(pd.Series(coords_a),self.markov_type,self.loops_allowed)
-        markov_chain_b = self.construct_markov_chain(pd.Series(coords_b),self.markov_type,self.loops_allowed)
-
-        score = self.calculate_score(self.distance,markov_chain_a,markov_chain_b,count_vector)
         lr = self.kde_calibrator.transform(score)
 
         return float(lr),None

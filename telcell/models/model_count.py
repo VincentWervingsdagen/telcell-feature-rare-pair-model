@@ -16,11 +16,10 @@ class Count(Model):
     Probability and Risk
 
     Model computes a likelihood ratio based on the categorical count data
-    obtained for two CDRs originating from two phones. Segmentation is based on first 
-    4 postal code digit segmentation within a predefined bounding box. Model counts
+    obtained for two CDRs originating from two phones. Model counts
     antennas found in each segmentation and determines likelihood that the two count
     vectors are produced by the same underlying multinomial distribution (with same parameters)
-    vs. two different distributions. 
+    vs. two different distributions.
     """
     def __init__(self):
         print('No initialization needed.')
