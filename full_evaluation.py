@@ -28,8 +28,8 @@ def main():
     transforming and evaluation."""
 
     # Edit these variables
-    scenario = 'common_work'
-    output_cell_file = "data/Vincent/{}/output_cell.csv".format(scenario)
+    scenario = 'common_work' # Scenario name to create an appropriate file path.
+    output_cell_file = "data/Vincent/{}/output_cell.csv".format(scenario) # The csv file with all observations.
 
     # Leave the rest as it is
 
