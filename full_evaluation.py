@@ -4,6 +4,7 @@ import random
 
 from datetime import datetime
 from pathlib import Path
+import itertools
 
 import numpy as np
 import pandas as pd
@@ -79,6 +80,8 @@ def main():
     else:
         dataset = GroupShuffleSplit(test_size=0.2, n_splits=1, random_state=40).split(X=df_output_cell,groups=df_output_cell['owner'])
 
+    predicted_lr_list = []
+    y_true_list = []
     fold_number = 0
     for train_index, test_index in dataset:
         data_train = df_output_cell.iloc[train_index]
@@ -185,9 +188,16 @@ def main():
             make_output_plots(predicted_lrs,
                               y_true,
                               output_dir,
-                              ignore_missing_lrs=True)
+                              ignore_missing_lrs=False)
+            predicted_lr_list.append(predicted_lrs)
+            y_true_list.append(y_true)
 
-
+    if response_cross_validation == 'y':
+        predicted_lr_list = list(itertools.chain.from_iterable(predicted_lr_list))
+        y_true_list = list(itertools.chain.from_iterable(y_true_list))
+        make_output_plots([*predicted_lr_list],[*y_true_list],main_output_dir,ignore_missing_lrs=False)
+    else:
+        pass
 
 if __name__ == '__main__':
     main()
