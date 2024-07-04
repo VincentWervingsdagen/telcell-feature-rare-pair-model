@@ -95,12 +95,12 @@ def main():
                          MarkovChain(df_train=data_train,cell_file=cell_file,bounding_box=bounding_box,
                                      output_histogram_path=output_dir_fold,response_ELUB=response_ELUB,
                                      state_space_level=markov_frobenius[0],distance=markov_frobenius[1],prior_type=markov_frobenius[2]),
-                         # MarkovChain(df_train=data_train, cell_file=cell_file, bounding_box=bounding_box,
-                         #            output_histogram_path=output_dir_fold,response_ELUB=response_ELUB,
-                         #             state_space_level=markov_cut_distance[0], distance=markov_cut_distance[1],prior_type=markov_cut_distance[2]),
-                         # MarkovChain(df_train=data_train, cell_file=cell_file, bounding_box=bounding_box,
-                         #               output_histogram_path=output_dir_fold,response_ELUB=response_ELUB,
-                         #             state_space_level=markov_GLR[0], distance=markov_GLR[1],prior_type=markov_GLR[2]),
+                         MarkovChain(df_train=data_train, cell_file=cell_file, bounding_box=bounding_box,
+                                    output_histogram_path=output_dir_fold,response_ELUB=response_ELUB,
+                                     state_space_level=markov_cut_distance[0], distance=markov_cut_distance[1],prior_type=markov_cut_distance[2]),
+                         MarkovChain(df_train=data_train, cell_file=cell_file, bounding_box=bounding_box,
+                                       output_histogram_path=output_dir_fold,response_ELUB=response_ELUB,
+                                     state_space_level=markov_GLR[0], distance=markov_GLR[1],prior_type=markov_GLR[2]),
                          Count_ELUB(training_set=data_train),
         ]
 
