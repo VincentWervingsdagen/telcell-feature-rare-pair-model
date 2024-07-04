@@ -7,8 +7,7 @@ from tqdm import tqdm
 import geopy
 from geopy.extra.rate_limiter import RateLimiter
 from itertools import combinations, product
-
-
+import warnings
 
 from pyproj import Transformer
 
@@ -22,7 +21,7 @@ def get_postal_code(reverse, lat, lon):
     except(KeyError,AttributeError):
         return 'placeholder'
 
-def add_postal_code(df,observation_file):
+def add_postal_code(df,observation_file=None):
     geolocator = geopy.Nominatim(user_agent='postal_code_converter')
     reverse = RateLimiter(geolocator.reverse, min_delay_seconds=1)
 
@@ -35,20 +34,21 @@ def add_postal_code(df,observation_file):
     df = pd.merge(df, unique_coordinates, on=['cellinfo.wgs84.lat', 'cellinfo.wgs84.lon'], how='left')
 
     df = df.loc[df['cellinfo.postal_code'] != 'placeholder']
-
-    df.to_csv(observation_file)
+    if observation_file == None:
+        pass
+    else:
+        df.to_csv(observation_file)
 
     return df
 
-def transform_data(observation_file, level) -> pd.DataFrame:
+def transform_data(df_observations, level) -> pd.DataFrame:
     # Expects a file from the coverage.py file with columns: 'owner', 'device', 'timestamp', 'cellinfo.wgs84.lat',
     #        'cellinfo.wgs84.lon', 'cellinfo.azimuth_degrees', 'cellinfo.id' and 'cellinfo.postal_code'
     # Will return a pandas dataframe with columns owner, device, timestamp and postal_code in the defined level format.
-    df_observations = pd.read_csv(observation_file)
     if 'cellinfo.postal_code' in df_observations.columns:
         df_observations = df_observations[['owner','device','cellinfo.postal_code']]
     else:
-        df_observations = add_postal_code(df_observations,observation_file)
+        df_observations = add_postal_code(df_observations)
 
     df_observations = df_observations.dropna()  # Drop nan values
     df_observations = df_observations.reset_index()  # Reset the index
@@ -183,7 +183,7 @@ def continuous_markov_chain():
 
 
 def create_pairs(owner_dict) -> (list[list],list[list]):
-    # Expects a list filled with items.
+    # Expects a dictinairy filled with keys: owners, object: phones.
     # Return a list with all possible pairs of items of a list.
     # Will only return (a,b) and not (b,a), where a,b are items in the list.
     # Initialize an empty list to store the pairs and their labels
@@ -392,7 +392,9 @@ def GLR(matrix_normal,count_matrix_burner) -> float:
             MLE.loc[index, :] = np.ones(number_of_states) / number_of_states
         else:
             MLE.loc[index, :] = MLE.loc[index, :] / row_sum.loc[index]
-    log_matrix = np.where(MLE > 0, np.log(np.divide(MLE,matrix_normal)), 0)
+    # Convert warnings to exceptions
+    warnings.filterwarnings('error', category=RuntimeWarning)
+    log_matrix = np.where(MLE > 0, np.log(np.divide(MLE,matrix_normal),where=MLE>0), 0)
     statistic = np.multiply(count_matrix_burner,log_matrix)
     return statistic.sum().sum()
 

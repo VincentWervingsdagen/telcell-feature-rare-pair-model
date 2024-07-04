@@ -5,7 +5,10 @@ import random
 from datetime import datetime
 from pathlib import Path
 
+import numpy as np
+import pandas as pd
 from lrbenchmark.evaluation import Setup
+from sklearn.model_selection import GroupKFold, GroupShuffleSplit
 
 from telcell.models.model_count import Count
 from telcell.models.model_count_ELUB import Count_ELUB
@@ -24,142 +27,165 @@ def main():
     """Main function that deals with the whole process. Three steps: loading,
     transforming and evaluation."""
 
-    train = 'common_work'
-    test = 'common_work'
+    # Edit these variables
+    scenario = 'common_work'
+    output_cell_file = "data/Vincent/{}/output_cell.csv".format(scenario)
+
+    # Leave the rest as it is
 
     response_ELUB = input(
         f"Do you want to use an ELUB-bounder for the Markov chain? Our advise is to use an ELUB-bounder. (y/n): ").strip().lower()
     response_H_d_pairs = input(f"Do you want all possible H_d pairs? All H_d pairs might take a long time to run, "
                                f"so otherwise a sample of 5 times the number of the H_p instead. (y/n): ").strip().lower()
+    response_cross_validation = input(f"Do you want to use cross validation with five folds?"
+        f"Otherwise a training test split of 80/20 percent will be used. (y/n): ").strip().lower()
 
     # Specify the main output_dir. Each model/parameter combination gets a
     # directory in the main output directory.
-    main_output_dir = Path(f'scratch/test2/{train}-{test}')
-
-
-    train_files = "data/Vincent/{}/training_set_{}.csv".format(train,train)
-    test_files = "data/Vincent/{}/test_set_{}.csv".format(test,test)
+    main_output_dir = Path(f'scratch/{scenario}')
 
     all_different_source = False
 
     # args for regression
 
     # args for feature based
-    bins =  ([0, 0],[1, 20],[21, 40],[41, 60],[61, 120])
+    bins = ([0, 0], [1, 20], [21, 40], [41, 60], [61, 120])
     coverage_models = pickle.load(open('data/coverage_model', 'rb'))
 
     # args for categorical count
-    bounding_box = calculate_bounding_box(train_files,test_files)
+    bounding_box = calculate_bounding_box(output_cell_file)
 
     # args for Markov chain approach 1
     cell_file = "tests/20191202131001.csv"
-    markov_1 = ['postal2', 'frobenius','all_ones']
+    markov_frobenius = ['postal2', 'frobenius','all_ones']
 
     # args for Markov chain approach 2
-    markov_2 = ['postal3', 'important_cut_distance_5','jeffrey']
+    markov_cut_distance = ['postal3', 'important_cut_distance_5','jeffrey']
 
     # args for Markov chain approach 3
-    markov_3 = ['postal2', 'GLR', 'jeffrey']
+    markov_GLR = ['postal2', 'GLR', 'jeffrey']
 
     # Check whether the files have 'cellinfo.postal_code' column.
-    for file in [train_files,test_files]: # Makes sure that the column cellinfo.postal_code is available
+    for file in [output_cell_file]:  # Makes sure that the column cellinfo.postal_code is available
         if check_header_for_postal_code(file):
             pass
         else:
             add_postal_code(file)
 
-    #Specify the models that we want to evaluate.
-    # models_days = [
-    #                RarePairModel(bins=bins, coverage_models=coverage_models),
-    #                Count()
-    # ]
+    df_output_cell = pd.read_csv(output_cell_file)
 
-    models_period = [
-                     MarkovChain(training_set=train_files,cell_file=cell_file,bounding_box=bounding_box,
-                                 output_histogram_path=main_output_dir,response_ELUB=response_ELUB,
-                                 state_space_level=markov_1[0],distance=markov_1[1],prior_type=markov_1[2]),
-                     MarkovChain(training_set=train_files, cell_file=cell_file, bounding_box=bounding_box,
-                                output_histogram_path=main_output_dir,response_ELUB=response_ELUB,
-                                 state_space_level=markov_2[0], distance=markov_2[1],prior_type=markov_2[2]),
-                     MarkovChain(training_set=train_files, cell_file=cell_file, bounding_box=bounding_box,
-                                   output_histogram_path=main_output_dir,response_ELUB=response_ELUB,
-                                 state_space_level=markov_3[0], distance=markov_3[1],prior_type=markov_3[2]),
-                     Count_ELUB(training_set=train_files),
-    ]
-
-    # Loading data
-    tracks = parse_measurements_csv(test_files)
-
-    # # This part of the code is used for the single day methods.
-    # data = list(slice_track_pairs_to_intervals(create_track_pairs(tracks, all_different_source=all_different_source),interval_length_h=24))
-    #
-    # # Sample negative pairs
-    # colocated, not_colocated = [], []
-    # for row in data:
-    #         (not_colocated,colocated)[is_colocated(row[0],row[1])].append(row)
-    # if response_H_d_pairs == 'y':
-    #     pass
-    # else:
-    #     not_colocated = random.sample(not_colocated, k=len(colocated))
-    # data = colocated + not_colocated
-    #
-    # # Create an experiment setup using run_pipeline as the evaluation function
-    # setup = Setup(run_pipeline)
-    #
-    # # Specify the constant parameters for evaluation
-    # setup.parameter('data', data)
-    # setup.parameter('filter', {'mnc': ['8', '16']})
-    #
-    # # Specify the variable parameters for evaluation in the variable 'grid'.
-    # # This grid is a dict of iterables and all combinations will be used
-    # # during the evaluation. An example is a list of all different models
-    # # that need to be evaluated, or a list of different parameter settings
-    # # for the models.
-    #
-    # grid = {'model': models_days}
-    # for variable, parameters, (predicted_lrs, y_true, extras) in \
-    #         setup.run_full_grid(grid):
-    #         model_name = parameters['model'].__class__.__name__
-    #         print(f"{model_name}: {predicted_lrs}")
-    #         unique_dir = '_'.join(f'{key}-{value}' for key, value in variable.items()) + '_' + datetime.now().strftime(
-    #                 "%Y-%m-%d %H_%M_%S")
-    #         output_dir = main_output_dir / unique_dir
-    #         make_output_plots(predicted_lrs,
-    #                         y_true,
-    #                         output_dir,
-    #                         ignore_missing_lrs=True)
-
-    # This part of the code is used for longer periods.
-    # Split the data in periods of half a year.
-    data = list(slice_track_pairs_to_intervals(create_track_pairs(tracks, all_different_source=all_different_source),interval_length_h=4500))
-    colocated, not_colocated = [], []
-    for row in data:
-            (not_colocated,colocated)[is_colocated(row[0],row[1])].append(row)
-    if response_H_d_pairs == 'y':
-        pass
+    if response_cross_validation == 'y':
+        dataset = GroupKFold(n_splits=5).split(X=df_output_cell,groups=df_output_cell['owner'])
     else:
-        not_colocated = random.sample(not_colocated, k=5 * len(colocated))
-    data = colocated + not_colocated
+        dataset = GroupShuffleSplit(test_size=0.2, n_splits=1, random_state=40).split(X=df_output_cell,groups=df_output_cell['owner'])
 
-    # Create an experiment setup using run_pipeline as the evaluation function
-    setup = Setup(run_pipeline)
+    fold_number = 0
+    for train_index, test_index in dataset:
+        data_train = df_output_cell.iloc[train_index]
+        data_test = df_output_cell.iloc[test_index]
+        fold_number += 1
+        output_dir_fold = main_output_dir / f"fold_{fold_number}"
+        #Specify the models that we want to evaluate.
+        # models_days = [
+        #                RarePairModel(bins=bins, coverage_models=coverage_models),
+        #                Count()
+        # ]
 
-    # Specify the constant parameters for evaluation
-    setup.parameter('filter', {'mnc': ['8', '16']})
-    setup.parameter('data', data)
+        models_period = [
+                         MarkovChain(df_train=data_train,cell_file=cell_file,bounding_box=bounding_box,
+                                     output_histogram_path=output_dir_fold,response_ELUB=response_ELUB,
+                                     state_space_level=markov_frobenius[0],distance=markov_frobenius[1],prior_type=markov_frobenius[2]),
+                         # MarkovChain(df_train=data_train, cell_file=cell_file, bounding_box=bounding_box,
+                         #            output_histogram_path=output_dir_fold,response_ELUB=response_ELUB,
+                         #             state_space_level=markov_cut_distance[0], distance=markov_cut_distance[1],prior_type=markov_cut_distance[2]),
+                         # MarkovChain(df_train=data_train, cell_file=cell_file, bounding_box=bounding_box,
+                         #               output_histogram_path=output_dir_fold,response_ELUB=response_ELUB,
+                         #             state_space_level=markov_GLR[0], distance=markov_GLR[1],prior_type=markov_GLR[2]),
+                         Count_ELUB(training_set=data_train),
+        ]
 
-    grid = {'model': models_period}
-    for variable, parameters, (predicted_lrs, y_true, extras) in \
-            setup.run_full_grid(grid):
-        model_name = parameters['model'].__class__.__name__
-        print(f"{model_name}: {predicted_lrs}")
-        unique_dir = '_'.join(f'{key}-{value}' for key, value in variable.items()) + '_' + datetime.now().strftime(
-            "%Y-%m-%d %H_%M_%S")
-        output_dir = main_output_dir / unique_dir
-        make_output_plots(predicted_lrs,
-                          y_true,
-                          output_dir,
-                          ignore_missing_lrs=True)
+        # Loading data
+        data_test.to_csv(main_output_dir/"bin") # Ugly solution, but the track functions are found in the other methods and only accept csv files. So will leave it as is.
+        tracks = parse_measurements_csv(main_output_dir/"bin")
+
+        # # This part of the code is used for the single day methods.
+        # data = list(slice_track_pairs_to_intervals(create_track_pairs(tracks, all_different_source=all_different_source),interval_length_h=24))
+        #
+        # # Sample negative pairs
+        # colocated, not_colocated = [], []
+        # for row in data:
+        #         (not_colocated,colocated)[is_colocated(row[0],row[1])].append(row)
+        # if response_H_d_pairs == 'y':
+        #     pass
+        # else:
+        #     not_colocated = random.sample(not_colocated, k=len(colocated))
+        # data = colocated + not_colocated
+        #
+        # # Create an experiment setup using run_pipeline as the evaluation function
+        # setup = Setup(run_pipeline)
+        #
+        # # Specify the constant parameters for evaluation
+        # setup.parameter('data', data)
+        # setup.parameter('filter', {'mnc': ['8', '16']})
+        #
+        # # Specify the variable parameters for evaluation in the variable 'grid'.
+        # # This grid is a dict of iterables and all combinations will be used
+        # # during the evaluation. An example is a list of all different models
+        # # that need to be evaluated, or a list of different parameter settings
+        # # for the models.
+        #
+        # grid = {'model': models_days}
+        # for variable, parameters, (predicted_lrs, y_true, extras) in \
+        #         setup.run_full_grid(grid):
+        #         model_name = parameters['model'].__class__.__name__
+        #         print(f"{model_name}: {predicted_lrs}")
+        #         unique_dir = '_'.join(f'{key}-{value}' for key, value in variable.items()) + '_' + datetime.now().strftime(
+        #                 "%Y-%m-%d %H_%M_%S")
+        #         output_dir = output_dir_fold / unique_dir
+        #         make_output_plots(predicted_lrs,
+        #                         y_true,
+        #                         output_dir,
+        #                         ignore_missing_lrs=True)
+
+        # This part of the code is used for longer periods.
+        # Split the data in periods of half a year.
+        data = list(slice_track_pairs_to_intervals(create_track_pairs(tracks, all_different_source=all_different_source),interval_length_h=4500))
+        colocated, not_colocated = [], []
+        for row in data:
+                (not_colocated,colocated)[is_colocated(row[0],row[1])].append(row)
+        if response_H_d_pairs == 'y':
+            pass
+        else:
+            not_colocated = random.sample(not_colocated, k=5 * len(colocated))
+        data = colocated + not_colocated
+
+        # Create an experiment setup using run_pipeline as the evaluation function
+        setup = Setup(run_pipeline)
+
+        # Specify the constant parameters for evaluation
+        setup.parameter('filter', {'mnc': ['8', '16']})
+        setup.parameter('data', data)
+
+        grid = {'model': models_period}
+        for variable, parameters, (predicted_lrs, y_true, extras) in \
+                setup.run_full_grid(grid):
+            model_name = parameters['model'].__class__.__name__
+
+            if model_name == 'MarkovChain':
+                distance = parameters['model'].get_distance()
+                print(f"{model_name}-{distance}: {predicted_lrs}")
+                unique_dir = f"{model_name}-{distance}" + datetime.now().strftime(
+                    "%Y-%m-%d %H_%M_%S")
+            else:
+                print(f"{model_name}: {predicted_lrs}")
+                unique_dir = f"{model_name}-" + datetime.now().strftime(
+                    "%Y-%m-%d %H_%M_%S")
+
+            output_dir = output_dir_fold / unique_dir
+            make_output_plots(predicted_lrs,
+                              y_true,
+                              output_dir,
+                              ignore_missing_lrs=True)
 
 
 

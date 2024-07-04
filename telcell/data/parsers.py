@@ -9,6 +9,8 @@ from itertools import groupby
 from pathlib import Path
 from typing import List, Union
 
+import pandas as pd
+
 from telcell.auxilliary_models.rare_pair.coverage_model import CoverageData
 from telcell.data.models import Measurement, Track, Point
 

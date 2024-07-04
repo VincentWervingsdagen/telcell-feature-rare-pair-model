@@ -8,6 +8,7 @@ from collections import defaultdict
 from tqdm import tqdm
 import gc
 import re
+import os
 
 import lir
 
@@ -29,10 +30,12 @@ class MarkovChain(Model):
     kde_calibrator: lir.KDECalibrator()
     output_histogram_path: Path
 
+    def get_distance(self):
+        return self.distance
 
     def __init__(
             self,
-            training_set,
+            df_train,
             cell_file,
             bounding_box,
             output_histogram_path,
@@ -55,7 +58,7 @@ class MarkovChain(Model):
         self.output_histogram_path = output_histogram_path
 
         # Transform the data to a dataframe with owner, device, timestamp, postal_code
-        self.data = MC.transform_data(training_set,state_space_level)
+        self.data = MC.transform_data(df_train,state_space_level)
         # Construct the state space.
         self.construct_state_space(state_space,state_space_level,antenna_type)
         # Construct the prior matrix, so that we can use it for estimating our movement matrices.
@@ -171,6 +174,15 @@ class MarkovChain(Model):
                                                                                              self.df_Markov_chains.loc[row['phone2']].loc['markov_chains'],
                                                                                              count_vector=self.df_Markov_chains.loc[row['phone1']].loc['count_data'],
                                                                                              count_matrix=self.df_Markov_chains.loc[row['phone2']].loc['count_matrices']),axis=1)
+
+        os.makedirs(self.output_histogram_path, exist_ok=True)
+
+        example_markov_chain = self.df_Markov_chains.iloc[0].loc['markov_chains']
+        shape = np.shape(example_markov_chain)
+        states = self.df_Markov_chains.iloc[0].loc['markov_chains'].columns
+        with open(self.output_histogram_path / "state_space.txt", "w") as f:
+            f.write(f'shape of the state space: {shape}\n')
+            f.write(f'state space: {states}\n')
 
         plt.hist(df_reference[df_reference['hypothesis'] == 1]['score'])
         plt.savefig(self.output_histogram_path/f'{self.distance}_scores_prosecution.png')

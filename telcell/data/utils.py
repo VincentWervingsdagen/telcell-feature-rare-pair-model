@@ -94,13 +94,12 @@ def add_postal_code(observation_file):
     df.to_csv(observation_file)
 
 
-def calculate_bounding_box(train_file,test_file):
-    df_train = pd.read_csv(train_file)
-    df_test = pd.read_csv(test_file)
-    max_lat = max(df_train['cellinfo.wgs84.lat'].max(),df_test['cellinfo.wgs84.lat'].max())
-    min_lat = min(df_train['cellinfo.wgs84.lat'].min(),df_test['cellinfo.wgs84.lat'].min())
-    max_lon = max(df_train['cellinfo.wgs84.lon'].max(), df_test['cellinfo.wgs84.lon'].max())
-    min_lon = min(df_train['cellinfo.wgs84.lon'].min(), df_test['cellinfo.wgs84.lon'].min())
+def calculate_bounding_box(file):
+    df = pd.read_csv(file)
+    max_lat = df['cellinfo.wgs84.lat'].max()
+    min_lat = df['cellinfo.wgs84.lat'].min()
+    max_lon = df['cellinfo.wgs84.lon'].max()
+    min_lon = df['cellinfo.wgs84.lon'].min()
     return [min_lon,min_lat,max_lon,max_lat]
 
 
