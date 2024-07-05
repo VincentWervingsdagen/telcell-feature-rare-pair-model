@@ -41,6 +41,12 @@ def main():
     response_cross_validation = input(f"Do you want to use cross validation with five folds?"
         f"Otherwise a training test split of 80/20 percent will be used. (y/n): ").strip().lower()
 
+    # # Used for testing.
+    # response_ELUB = 'y'
+    # response_H_d_pairs = 'n'
+    # response_cross_validation = 'y'
+
+
     # Specify the main output_dir. Each model/parameter combination gets a
     # directory in the main output directory.
     main_output_dir = Path(f'scratch/{scenario}')
@@ -80,14 +86,15 @@ def main():
     else:
         dataset = GroupShuffleSplit(test_size=0.2, n_splits=1, random_state=40).split(X=df_output_cell,groups=df_output_cell['owner'])
 
-    predicted_lr_list = []
-    y_true_list = []
+    df_results = pd.DataFrame()
     fold_number = 0
     for train_index, test_index in dataset:
         data_train = df_output_cell.iloc[train_index]
         data_test = df_output_cell.iloc[test_index]
         fold_number += 1
+        predicted_lr_list = dict()
         output_dir_fold = main_output_dir / f"fold_{fold_number}"
+
         #Specify the models that we want to evaluate.
         # models_days = [
         #                RarePairModel(bins=bins, coverage_models=coverage_models),
@@ -175,9 +182,9 @@ def main():
             model_name = parameters['model'].__class__.__name__
 
             if model_name == 'MarkovChain':
-                distance = parameters['model'].get_distance()
-                print(f"{model_name}-{distance}: {predicted_lrs}")
-                unique_dir = f"{model_name}-{distance}" + datetime.now().strftime(
+                model_name = model_name + "_" + parameters['model'].get_distance()
+                print(f"{model_name}: {predicted_lrs}")
+                unique_dir = f"{model_name}" + datetime.now().strftime(
                     "%Y-%m-%d %H_%M_%S")
             else:
                 print(f"{model_name}: {predicted_lrs}")
@@ -189,13 +196,19 @@ def main():
                               y_true,
                               output_dir,
                               ignore_missing_lrs=False)
-            predicted_lr_list.append(predicted_lrs)
-            y_true_list.append(y_true)
+            predicted_lr_list[model_name] = predicted_lrs
+
+
+        predicted_lr_list['y_true'] = y_true
+        if df_results.empty:
+            df_results = pd.DataFrame(predicted_lr_list)
+        else:
+            df_results = pd.concat([df_results,pd.DataFrame(predicted_lr_list)],ignore_index=True)
 
     if response_cross_validation == 'y':
-        predicted_lr_list = list(itertools.chain.from_iterable(predicted_lr_list))
-        y_true_list = list(itertools.chain.from_iterable(y_true_list))
-        make_output_plots([*predicted_lr_list],[*y_true_list],main_output_dir,ignore_missing_lrs=False)
+        for model in [col for col in df_results.columns if col != 'y_true']:
+            output_dir = main_output_dir / "total" / model
+            make_output_plots(df_results[model],df_results['y_true'],output_dir,ignore_missing_lrs=False)
     else:
         pass
 

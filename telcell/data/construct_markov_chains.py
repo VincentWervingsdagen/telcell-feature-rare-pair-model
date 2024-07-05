@@ -7,7 +7,6 @@ from tqdm import tqdm
 import geopy
 from geopy.extra.rate_limiter import RateLimiter
 from itertools import combinations, product
-import warnings
 
 from pyproj import Transformer
 
@@ -393,7 +392,6 @@ def GLR(matrix_normal,count_matrix_burner) -> float:
         else:
             MLE.loc[index, :] = MLE.loc[index, :] / row_sum.loc[index]
     # Convert warnings to exceptions
-    warnings.filterwarnings('error', category=RuntimeWarning)
     log_matrix = np.where(MLE > 0, np.log(np.divide(MLE,matrix_normal),where=MLE>0), 0)
     statistic = np.multiply(count_matrix_burner,log_matrix)
     return statistic.sum().sum()
