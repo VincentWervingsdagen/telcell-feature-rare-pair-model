@@ -2,12 +2,12 @@ import itertools
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
-from scipy.linalg import eig
 from tqdm import tqdm
 import geopy
 from geopy.extra.rate_limiter import RateLimiter
 from itertools import combinations, product
-
+import matplotlib.pyplot as plt
+import os
 from pyproj import Transformer
 
 from deap import base, creator, tools, algorithms
@@ -179,6 +179,25 @@ def discrete_markov_chain(track,prior,states,loops_allowed=True,return_count_vec
 
 def continuous_markov_chain():
     raise NotImplementedError
+
+
+def distance_histograms(distances_Hp, distances_Hd,output_path,distance_function):
+    os.makedirs(output_path, exist_ok=True)
+    plt.hist(distances_Hp, bins=20, alpha=.5,color='#377eb8',density=True,label='Hp')
+    plt.hist(distances_Hd, bins=20, alpha=.5,color='#ff7f00',density=True,label='Hd')
+    plt.title(f'A density plot showing the score distributions\n for the {distance_function} of both Hp and Hd pairs')
+    plt.xlabel('score')
+    plt.ylabel('density')
+    plt.legend()
+    plt.savefig(output_path/'scores.png')
+    plt.clf()
+
+    with open(output_path / "statistics.txt", "w") as f:
+        f.write(f'Hp mean: {np.mean(distances_Hp):.3f}\n')
+        f.write(f'Hp variance: {np.var(distances_Hp):.3f}\n')
+        f.write(f'Hd mean: {np.mean(distances_Hd):.3f}\n')
+        f.write(f'Hd var: {np.var(distances_Hd):.3f}\n')
+
 
 
 def create_pairs(owner_dict) -> (list[list],list[list]):
@@ -394,7 +413,7 @@ def GLR(matrix_normal,count_matrix_burner) -> float:
     # Convert warnings to exceptions
     log_matrix = np.where(MLE > 0, np.log(np.divide(MLE,matrix_normal),where=MLE>0), 0)
     statistic = np.multiply(count_matrix_burner,log_matrix)
-    return statistic.sum().sum()
+    return 2*np.log10(statistic.sum().sum())
 
 
 def frobenius_norm(matrix_normal,matrix_burner) -> float:

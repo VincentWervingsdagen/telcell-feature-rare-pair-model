@@ -1,7 +1,7 @@
 """Script containing an example how to use telcell."""
 import pickle
 import random
-
+import os
 from datetime import datetime
 from pathlib import Path
 import itertools
@@ -29,23 +29,16 @@ def main():
     transforming and evaluation."""
 
     # Edit these variables
-    scenario = 'common_work' # Scenario name to create an appropriate file path.
+    scenario = 'location_dependent' # Scenario name to create an appropriate file path.
     output_cell_file = "data/Vincent/{}/output_cell.csv".format(scenario) # The csv file with all observations.
 
     # Leave the rest as it is
-
     response_ELUB = input(
         f"Do you want to use an ELUB-bounder for the Markov chain? Our advise is to use an ELUB-bounder. (y/n): ").strip().lower()
     response_H_d_pairs = input(f"Do you want all possible H_d pairs? All H_d pairs might take a long time to run, "
                                f"so otherwise a sample of 5 times the number of the H_p instead. (y/n): ").strip().lower()
     response_cross_validation = input(f"Do you want to use cross validation with five folds?"
         f"Otherwise a training test split of 80/20 percent will be used. (y/n): ").strip().lower()
-
-    # # Used for testing.
-    # response_ELUB = 'y'
-    # response_H_d_pairs = 'n'
-    # response_cross_validation = 'y'
-
 
     # Specify the main output_dir. Each model/parameter combination gets a
     # directory in the main output directory.
@@ -64,13 +57,13 @@ def main():
 
     # args for Markov chain approach 1
     cell_file = "tests/20191202131001.csv"
-    markov_frobenius = ['postal2', 'frobenius','all_ones']
+    markov_frobenius = ['postal2', 'Frobenius norm','all_ones']
 
     # args for Markov chain approach 2
-    markov_cut_distance = ['postal3', 'important_cut_distance_5','jeffrey']
+    markov_cut_distance = ['postal3', 'cut distance','jeffrey']
 
     # args for Markov chain approach 3
-    markov_GLR = ['postal2', 'GLR', 'jeffrey']
+    markov_GLR = ['postal2', 'GLR distance', 'jeffrey']
 
     # Check whether the files have 'cellinfo.postal_code' column.
     for file in [output_cell_file]:  # Makes sure that the column cellinfo.postal_code is available
@@ -211,6 +204,16 @@ def main():
             make_output_plots(df_results[model],df_results['y_true'],output_dir,ignore_missing_lrs=False)
     else:
         pass
+
+    file_to_delete = main_output_dir/"bin"
+    if os.path.exists(file_to_delete):
+        try:
+            os.remove(file_to_delete)
+            print(f"File '{file_to_delete}' successfully deleted.")
+        except OSError as e:
+            print(f"Error deleting file '{file_to_delete}': {e}")
+    else:
+        print(f"File '{file_to_delete}' does not exist.")
 
 if __name__ == '__main__':
     main()

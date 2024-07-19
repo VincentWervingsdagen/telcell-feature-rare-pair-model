@@ -1,7 +1,6 @@
 from typing import Tuple, Optional, Mapping
 
 from pathlib import Path
-import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 from collections import defaultdict
@@ -130,19 +129,19 @@ class MarkovChain(Model):
 
     def calculate_score(self,distance,matrix1,matrix2,count_vector=None,count_matrix=None):
         # Calculate the distance
-        if distance == 'cut_distance':
+        if distance == 'cut_distance_generic':
             return MC.genetic_cut_distance(matrix_normal=matrix1,matrix_burner=matrix2)
         elif distance == 'freq_distance':
             return MC.frequent_transition_distance(matrix_normal=matrix1, matrix_burner=matrix2,count_data=count_vector)
-        elif distance == 'frobenius':
+        elif distance == 'Frobenius norm':
             return MC.frobenius_norm(matrix_normal=matrix1,matrix_burner=matrix2)
         elif distance == 'trace':
             return MC.trace_norm(matrix_normal=matrix1,matrix_burner=matrix2)
-        elif distance == 'important_cut_distance_5':
+        elif distance == 'cut distance':
             return MC.important_states_cut_distance_5(matrix_normal=matrix1,matrix_burner=matrix2,count_data=count_vector)
         elif distance == 'important_cut_distance':
             return MC.important_states_cut_distance(matrix_normal=matrix1,matrix_burner=matrix2,count_data=count_vector)
-        elif distance == 'GLR':
+        elif distance == 'GLR distance':
             return MC.GLR(matrix_normal=matrix1,count_matrix_burner=count_matrix)
         else:
             raise ValueError(
@@ -184,13 +183,7 @@ class MarkovChain(Model):
             f.write(f'shape of the state space: {shape}\n')
             f.write(f'state space: {states}\n')
 
-        plt.hist(df_reference[df_reference['hypothesis'] == 1]['score'])
-        plt.savefig(self.output_histogram_path/f'{self.distance}_scores_prosecution.png')
-        plt.clf()
-
-        plt.hist(df_reference[df_reference['hypothesis'] == 0]['score'])
-        plt.savefig(self.output_histogram_path/f'{self.distance}_scores_defense.png')
-        plt.clf()
+        MC.distance_histograms(df_reference[df_reference['hypothesis']==1]['score'],df_reference[df_reference['hypothesis']==0]['score'],self.output_histogram_path/f'{self.distance}',self.distance)
 
         # Clear the matrices from memory
         del self.df_Markov_chains
