@@ -29,7 +29,7 @@ def main():
     transforming and evaluation."""
 
     # Edit these variables
-    scenario = 'location_dependent' # Scenario name to create an appropriate file path.
+    scenario = 'explorers' # Scenario name to create an appropriate file path.
     output_cell_file = "data/Vincent/{}/output_cell.csv".format(scenario) # The csv file with all observations.
 
     # Leave the rest as it is
@@ -57,13 +57,13 @@ def main():
 
     # args for Markov chain approach 1
     cell_file = "tests/20191202131001.csv"
-    markov_frobenius = ['postal2', 'Frobenius norm','all_ones']
+    markov_frobenius = ['postal2', 'Frobenius norm','uniform']
 
     # args for Markov chain approach 2
-    markov_cut_distance = ['postal3', 'cut distance','jeffrey']
+    markov_cut_distance = ['postal3', 'cut distance','overall objective']
 
-    # args for Markov chain approach 3
-    markov_GLR = ['postal2', 'GLR distance', 'jeffrey']
+    # # args for Markov chain approach 3
+    # markov_GLR = ['postal2', 'GLR distance', 'uniform']
 
     # Check whether the files have 'cellinfo.postal_code' column.
     for file in [output_cell_file]:  # Makes sure that the column cellinfo.postal_code is available
@@ -101,9 +101,9 @@ def main():
                          MarkovChain(df_train=data_train, cell_file=cell_file, bounding_box=bounding_box,
                                     output_histogram_path=output_dir_fold,response_ELUB=response_ELUB,
                                      state_space_level=markov_cut_distance[0], distance=markov_cut_distance[1],prior_type=markov_cut_distance[2]),
-                         MarkovChain(df_train=data_train, cell_file=cell_file, bounding_box=bounding_box,
-                                       output_histogram_path=output_dir_fold,response_ELUB=response_ELUB,
-                                     state_space_level=markov_GLR[0], distance=markov_GLR[1],prior_type=markov_GLR[2]),
+                         # MarkovChain(df_train=data_train, cell_file=cell_file, bounding_box=bounding_box,
+                         #               output_histogram_path=output_dir_fold,response_ELUB=response_ELUB,
+                         #             state_space_level=markov_GLR[0], distance=markov_GLR[1],prior_type=markov_GLR[2]),
                          Count_ELUB(training_set=data_train),
         ]
 

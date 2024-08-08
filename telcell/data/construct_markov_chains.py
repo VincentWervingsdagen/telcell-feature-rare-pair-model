@@ -114,7 +114,13 @@ def state_space_observations(df) -> np.array:
 
 def jeffrey_prior(number_of_states,states) -> pd.DataFrame:
     # Expects the states of the markov chain.
-    # Will return the Jeffrey prior: A number_of_states x number_of_states matrix filled with 1/number_of_states.
+    # Will return the Jeffrey prior: A number_of_states x number_of_states matrix filled with 1/2.
+    return pd.DataFrame(1/2,index=states,columns=states)
+
+
+def overall_objective_prior(number_of_states,states) -> pd.DataFrame:
+    # Expects the states of the markov chain.
+    # Will return the overall objective prior: A number_of_states x number_of_states matrix filled with 1/number_of_states.
     return pd.DataFrame(1/number_of_states,index=states,columns=states)
 
 

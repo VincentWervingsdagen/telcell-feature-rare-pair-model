@@ -100,11 +100,13 @@ class MarkovChain(Model):
             raise ValueError('The specified state space is not implemented. Please use Omega or observations.')
         self.number_of_states = len(self.state_space)
 
-    def construct_prior(self,prior_type):
+    def construct_prior(self,prior_type='jeffrey'):
         # Construct the prior
-        if prior_type == 'jeffrey':  # Returns a nxn matrix with each value 1/n
+        if prior_type == 'jeffrey':  # Returns a nxn matrix with each value 1/2
             self.prior_chain = MC.jeffrey_prior(number_of_states=self.number_of_states, states=self.state_space)
-        elif prior_type == 'all_ones':  # Returns a nxn matrix with each value 1
+        elif prior_type == 'overall objective':  # Returns a nxn matrix with each value 1/n
+            self.prior_chain = MC.overall_objective_prior(states=self.state_space)
+        elif (prior_type == 'uniform') or (prior_type == 'all_ones'):  # Returns a nxn matrix with each value 1
             self.prior_chain = MC.all_ones_prior(states=self.state_space)
         elif prior_type == 'zero':  # Returns a nxn matrix based on the distance between the antennas/postal/postal3 codes.
             self.prior_chain = MC.zero_prior(states=self.state_space)
