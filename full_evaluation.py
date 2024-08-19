@@ -60,7 +60,7 @@ def main():
     markov_frobenius = ['postal2', 'Frobenius_norm','uniform']
 
     # args for Markov chain approach 2
-    markov_cut_distance = ['postal2', 'cut_distance','uniform']
+    markov_cut_distance = ['postal3', 'cut_distance','overall objective']
 
     # Check whether the files have 'cellinfo.postal_code' column.
     for file in [output_cell_file]:  # Makes sure that the column cellinfo.postal_code is available

@@ -118,10 +118,10 @@ def jeffrey_prior(number_of_states,states) -> pd.DataFrame:
     return pd.DataFrame(1/2,index=states,columns=states)
 
 
-def overall_objective_prior(number_of_states,states) -> pd.DataFrame:
+def overall_objective_prior(states) -> pd.DataFrame:
     # Expects the states of the markov chain.
     # Will return the overall objective prior: A number_of_states x number_of_states matrix filled with 1/number_of_states.
-    return pd.DataFrame(1/number_of_states,index=states,columns=states)
+    return pd.DataFrame(1/len(states),index=states,columns=states)
 
 
 def all_ones_prior(states) -> pd.DataFrame:
