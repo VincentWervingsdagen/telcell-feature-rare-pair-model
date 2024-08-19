@@ -275,8 +275,8 @@ def genetic_cut_distance(matrix_normal,matrix_burner) -> float:
     toolbox.register("select", tools.selTournament,tournsize=3)
 
     # Genetic Algorithm parameters
-    population = toolbox.population(n=1000)
-    ngen = 20
+    population = toolbox.population(n=10)
+    ngen = 3
     cxpb = 0.5
     mutpb = 0.2
 

@@ -29,7 +29,7 @@ def main():
     transforming and evaluation."""
 
     # Edit these variables
-    scenario = 'explorers' # Scenario name to create an appropriate file path.
+    scenario = 'baseline' # Scenario name to create an appropriate file path.
     output_cell_file = "data/Vincent/{}/output_cell.csv".format(scenario) # The csv file with all observations.
 
     # Leave the rest as it is
@@ -37,7 +37,7 @@ def main():
         f"Do you want to use an ELUB-bounder for the Markov chain? Our advise is to use an ELUB-bounder. (y/n): ").strip().lower()
     response_H_d_pairs = input(f"Do you want all possible H_d pairs? All H_d pairs might take a long time to run, "
                                f"so otherwise a sample of 5 times the number of the H_p instead. (y/n): ").strip().lower()
-    response_cross_validation = input(f"Do you want to use cross validation with five folds?"
+    response_cross_validation = input(f"Do you want to use cross validation with five folds? "
         f"Otherwise a training test split of 80/20 percent will be used. (y/n): ").strip().lower()
 
     # Specify the main output_dir. Each model/parameter combination gets a
@@ -57,13 +57,10 @@ def main():
 
     # args for Markov chain approach 1
     cell_file = "tests/20191202131001.csv"
-    markov_frobenius = ['postal2', 'Frobenius norm','uniform']
+    markov_frobenius = ['postal2', 'Frobenius_norm','uniform']
 
     # args for Markov chain approach 2
-    markov_cut_distance = ['postal3', 'cut distance','overall objective']
-
-    # # args for Markov chain approach 3
-    # markov_GLR = ['postal2', 'GLR distance', 'uniform']
+    markov_cut_distance = ['postal2', 'cut_distance','uniform']
 
     # Check whether the files have 'cellinfo.postal_code' column.
     for file in [output_cell_file]:  # Makes sure that the column cellinfo.postal_code is available
@@ -101,9 +98,6 @@ def main():
                          MarkovChain(df_train=data_train, cell_file=cell_file, bounding_box=bounding_box,
                                     output_histogram_path=output_dir_fold,response_ELUB=response_ELUB,
                                      state_space_level=markov_cut_distance[0], distance=markov_cut_distance[1],prior_type=markov_cut_distance[2]),
-                         # MarkovChain(df_train=data_train, cell_file=cell_file, bounding_box=bounding_box,
-                         #               output_histogram_path=output_dir_fold,response_ELUB=response_ELUB,
-                         #             state_space_level=markov_GLR[0], distance=markov_GLR[1],prior_type=markov_GLR[2]),
                          Count_ELUB(training_set=data_train),
         ]
 
@@ -170,6 +164,7 @@ def main():
         setup.parameter('data', data)
 
         grid = {'model': models_period}
+
         for variable, parameters, (predicted_lrs, y_true, extras) in \
                 setup.run_full_grid(grid):
             model_name = parameters['model'].__class__.__name__
@@ -187,7 +182,8 @@ def main():
             output_dir = output_dir_fold / unique_dir
             make_output_plots(predicted_lrs,
                               y_true,
-                              output_dir,
+                              bounds=None,
+                              output_dir=output_dir,
                               ignore_missing_lrs=False)
             predicted_lr_list[model_name] = predicted_lrs
 
@@ -199,9 +195,11 @@ def main():
             df_results = pd.concat([df_results,pd.DataFrame(predicted_lr_list)],ignore_index=True)
 
     if response_cross_validation == 'y':
+        bounds = (df_results.loc[:,df_results.columns!='y_true'].min().min(),df_results.loc[:,df_results.columns!='y_true'].max().max())
+        print(bounds)
         for model in [col for col in df_results.columns if col != 'y_true']:
             output_dir = main_output_dir / "total" / model
-            make_output_plots(df_results[model],df_results['y_true'],output_dir,ignore_missing_lrs=False)
+            make_output_plots(df_results[model],df_results['y_true'],bounds,output_dir,ignore_missing_lrs=False)
     else:
         pass
 

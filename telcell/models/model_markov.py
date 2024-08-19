@@ -131,19 +131,19 @@ class MarkovChain(Model):
 
     def calculate_score(self,distance,matrix1,matrix2,count_vector=None,count_matrix=None):
         # Calculate the distance
-        if distance == 'cut_distance_generic':
+        if distance == 'cut_distance_genetic':
             return MC.genetic_cut_distance(matrix_normal=matrix1,matrix_burner=matrix2)
         elif distance == 'freq_distance':
             return MC.frequent_transition_distance(matrix_normal=matrix1, matrix_burner=matrix2,count_data=count_vector)
-        elif distance == 'Frobenius norm':
+        elif distance == 'Frobenius_norm':
             return MC.frobenius_norm(matrix_normal=matrix1,matrix_burner=matrix2)
         elif distance == 'trace':
             return MC.trace_norm(matrix_normal=matrix1,matrix_burner=matrix2)
-        elif distance == 'cut distance':
+        elif distance == 'cut_distance':
             return MC.important_states_cut_distance_5(matrix_normal=matrix1,matrix_burner=matrix2,count_data=count_vector)
         elif distance == 'important_cut_distance':
             return MC.important_states_cut_distance(matrix_normal=matrix1,matrix_burner=matrix2,count_data=count_vector)
-        elif distance == 'GLR distance':
+        elif distance == 'GLR_distance':
             return MC.GLR(matrix_normal=matrix1,count_matrix_burner=count_matrix)
         else:
             raise ValueError(

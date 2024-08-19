@@ -25,7 +25,7 @@ plt.set_ylabel = plt.ylabel
 plt.set_xlim = plt.xlim
 plt.set_ylim = plt.ylim
 
-def make_output_plots(lrs, y_true, output_dir: Union[pathlib.Path, str] = '.', ignore_missing_lrs: bool = False):
+def make_output_plots(lrs, y_true, bounds, output_dir: Union[pathlib.Path, str] = '.', ignore_missing_lrs: bool = False):
     """
     writes standard evaluation output to outputdir (cllr value, plots of lr distribution and pav). By default
     sets lrs not provided to 1, optionally drops these. The former makes sense when comparing systems that
@@ -64,10 +64,14 @@ def make_output_plots(lrs, y_true, output_dir: Union[pathlib.Path, str] = '.', i
     cllr = lir.metrics.cllr(lrs, y_true)
     cllr_min = lir.metrics.cllr_min(lrs, y_true)
     cllr_cal = cllr - cllr_min
-    hp_mean = np.mean(np.log(lrs[y_true]))
-    hd_mean = np.mean(np.log(lrs[1-y_true]))
-    hp_var = np.var(np.log(lrs[y_true]))
-    hd_var = np.var(np.log(lrs[1-y_true]))
+    hp_mean = np.mean(np.log10(lrs[y_true==1]))
+    hd_mean = np.mean(np.log10(lrs[y_true==0]))
+    hp_var = np.var(np.log10(lrs[y_true==1]))
+    hd_var = np.var(np.log10(lrs[y_true==0]))
+    hp_max = np.max(np.log10(lrs[y_true==1]))
+    hp_min = np.min(np.log10(lrs[y_true==1]))
+    hd_max = np.max(np.log10(lrs[y_true==0]))
+    hd_min = np.min(np.log10(lrs[y_true==0]))
 
     with open(output_dir / "cllr.txt", "w") as f:
         f.write(f'cllr: {cllr:.3f}\n')
@@ -75,19 +79,23 @@ def make_output_plots(lrs, y_true, output_dir: Union[pathlib.Path, str] = '.', i
         f.write(f'cllr cal: {cllr_cal:.3f}\n')
         f.write(f'total: {len(y_true):.3f}\n')
         f.write(f'Hp mean: {hp_mean:.3f}\n')
-        f.write(f'Hp variance: {hp_var:.3f}\n')
+        f.write(f'Hp var: {hp_var:.3f}\n')
+        f.write(f'Hp max: {hp_max:.3f}\n')
+        f.write(f'Hp min: {hp_min:.3f}\n')
         f.write(f'Hd mean: {hd_mean:.3f}\n')
         f.write(f'Hd var: {hd_var:.3f}\n')
+        f.write(f'Hd max: {hd_max:.3f}\n')
+        f.write(f'Hd min: {hd_min:.3f}\n')
 
     # Save visualizations to disk.
     with savefig(str(output_dir / "pav.png")) as ax:
         ax.pav(lrs, y_true)
 
     with savefig(str(output_dir / 'lr_distribution.png')) as ax:
-        ax.lr_histogram(lrs, y_true)
+        ax.lr_histogram(lrs, y_true, bounds)
 
     with savefig(str(output_dir / 'tippett.png')) as ax:
-        ax.tippett(lrs, y_true)
+        ax.tippett(lrs, y_true, bounds)
 
 
 def write_lrs(lrs: Sequence[Optional[float]], output_dir: pathlib.Path,
@@ -195,7 +203,7 @@ def axes(savefig=None, show=None):
         plt.close(fig)
 
 
-def tippett(lrs, y, plot_type=1, ax=plt):
+def tippett(lrs, y,bounds=None, plot_type=1, ax=plt):
     """
     plots empirical cumulative distribution functions of same-source and
         different-sources lrs
@@ -229,10 +237,14 @@ def tippett(lrs, y, plot_type=1, ax=plt):
     ax.set_xlabel('log$_{10}$(LR)')
     ax.set_ylabel('Cumulative proportion')
     ax.title('The cumulative distribution function for \n log(LR) under both Hp and Hd')
+    if bounds != None:
+        ax.xlim(np.log10(1/bounds[0]),np.log10(bounds[1]))
+    else:
+        pass
     ax.legend()
 
 
-def lr_histogram(lrs, y, bins=20, weighted=True, ax=plt):
+def lr_histogram(lrs, y, bounds=None, bins=10,weighted=True, ax=plt):
     """
     plots the 10log lrs
 
@@ -257,6 +269,10 @@ def lr_histogram(lrs, y, bins=20, weighted=True, ax=plt):
     ax.legend()
     ax.title('Histograms of the log(LR) distribution under Hp and Hd')
     ax.set_ylabel('count' if not weighted else 'relative frequency')
+    if bounds != None:
+        ax.xlim(np.log10(bounds[0]),np.log10(bounds[1]))
+    else:
+        pass
 
 
 def pav(lrs, y, add_misleading=0, show_scatter=True, ax=plt):
