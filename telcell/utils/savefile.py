@@ -238,7 +238,7 @@ def tippett(lrs, y,bounds=None, plot_type=1, ax=plt):
     ax.set_ylabel('Cumulative proportion')
     ax.title('The cumulative distribution function for \n log(LR) under both Hp and Hd')
     if bounds != None:
-        ax.xlim(np.log10(1/bounds[0]),np.log10(bounds[1]))
+        ax.xlim(np.log10(bounds[0]),np.log10(bounds[1]))
     else:
         pass
     ax.legend()
