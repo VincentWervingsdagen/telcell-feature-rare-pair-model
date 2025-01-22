@@ -35,8 +35,6 @@ def main():
     # Leave the rest as it is
     response_ELUB = input(
         f"Do you want to use an ELUB-bounder for the Markov chain? Our advise is to use an ELUB-bounder. (y/n): ").strip().lower()
-    response_H_d_pairs = input(f"Do you want all possible H_d pairs? All H_d pairs might take a long time to run, "
-                               f"so otherwise a sample of 5 times the number of the H_p instead. (y/n): ").strip().lower()
     response_cross_validation = input(f"Do you want to use cross validation with five folds? "
         f"Otherwise a training test split of 80/20 percent will be used. (y/n): ").strip().lower()
 
@@ -55,12 +53,16 @@ def main():
     # args for categorical count
     bounding_box = calculate_bounding_box(output_cell_file)
 
-    # args for Markov chain approach 1
     cell_file = "tests/20191202131001.csv"
-    markov_frobenius = ['postal2', 'Frobenius_norm','uniform']
+    markov_frobenius_2_u = ['postal2', 'Frobenius_norm','uniform']
+    markov_frobenius_2_ob = ['postal2', 'Frobenius_norm', 'overall objective']
+    markov_frobenius_3_u = ['postal3', 'Frobenius_norm', 'uniform']
+    markov_frobenius_3_ob = ['postal3', 'Frobenius_norm', 'overall objective']
 
-    # args for Markov chain approach 2
-    markov_cut_distance = ['postal3', 'cut_distance','overall objective']
+    markov_cut_distance_2_u = ['postal2', 'restricted_cut_distance','uniform']
+    markov_cut_distance_2_ob = ['postal2', 'restricted_cut_distance','overall objective']
+    markov_cut_distance_3_u = ['postal3', 'restricted_cut_distance','uniform']
+    markov_cut_distance_3_ob = ['postal3', 'restricted_cut_distance','overall objective']
 
     # Check whether the files have 'cellinfo.postal_code' column.
     for file in [output_cell_file]:  # Makes sure that the column cellinfo.postal_code is available
@@ -93,11 +95,36 @@ def main():
 
         models_period = [
                          MarkovChain(df_train=data_train,cell_file=cell_file,bounding_box=bounding_box,
-                                     output_histogram_path=output_dir_fold,response_ELUB=response_ELUB,
-                                     state_space_level=markov_frobenius[0],distance=markov_frobenius[1],prior_type=markov_frobenius[2]),
+                                     output_path=output_dir_fold,response_ELUB=response_ELUB,
+                                     state_space_level=markov_frobenius_2_u[0],distance=markov_frobenius_2_u[1],prior_type=markov_frobenius_2_u[2]),
                          MarkovChain(df_train=data_train, cell_file=cell_file, bounding_box=bounding_box,
-                                    output_histogram_path=output_dir_fold,response_ELUB=response_ELUB,
-                                     state_space_level=markov_cut_distance[0], distance=markov_cut_distance[1],prior_type=markov_cut_distance[2]),
+                                    output_path=output_dir_fold, response_ELUB=response_ELUB,
+                                    state_space_level=markov_frobenius_2_ob[0], distance=markov_frobenius_2_ob[1],
+                                    prior_type=markov_frobenius_2_ob[2]),
+                         MarkovChain(df_train=data_train, cell_file=cell_file, bounding_box=bounding_box,
+                                    output_path=output_dir_fold, response_ELUB=response_ELUB,
+                                    state_space_level=markov_frobenius_3_u[0], distance=markov_frobenius_3_u[1],
+                                    prior_type=markov_frobenius_3_u[2]),
+                         MarkovChain(df_train=data_train, cell_file=cell_file, bounding_box=bounding_box,
+                                    output_path=output_dir_fold, response_ELUB=response_ELUB,
+                                    state_space_level=markov_frobenius_3_ob[0], distance=markov_frobenius_3_ob[1],
+                                    prior_type=markov_frobenius_3_ob[2]),
+                         MarkovChain(df_train=data_train, cell_file=cell_file, bounding_box=bounding_box,
+                                    output_path=output_dir_fold, response_ELUB=response_ELUB,
+                                    state_space_level=markov_cut_distance_2_u[0], distance=markov_cut_distance_2_u[1],
+                                    prior_type=markov_cut_distance_2_u[2]),
+                         MarkovChain(df_train=data_train, cell_file=cell_file, bounding_box=bounding_box,
+                                    output_path=output_dir_fold, response_ELUB=response_ELUB,
+                                    state_space_level=markov_cut_distance_2_ob[0], distance=markov_cut_distance_2_ob[1],
+                                    prior_type=markov_cut_distance_2_ob[2]),
+                         MarkovChain(df_train=data_train, cell_file=cell_file, bounding_box=bounding_box,
+                                    output_path=output_dir_fold, response_ELUB=response_ELUB,
+                                    state_space_level=markov_cut_distance_3_u[0], distance=markov_cut_distance_3_u[1],
+                                    prior_type=markov_cut_distance_3_u[2]),
+                         MarkovChain(df_train=data_train, cell_file=cell_file, bounding_box=bounding_box,
+                                    output_path=output_dir_fold, response_ELUB=response_ELUB,
+                                    state_space_level=markov_cut_distance_3_ob[0], distance=markov_cut_distance_3_ob[1],
+                                    prior_type=markov_cut_distance_3_ob[2]),
                          Count_ELUB(training_set=data_train),
         ]
 
@@ -144,16 +171,12 @@ def main():
         #                         output_dir,
         #                         ignore_missing_lrs=True)
 
-        # This part of the code is used for longer periods.
+        # This part of the code is used for periods longer than days.
         # Split the data in periods of half a year.
         data = list(slice_track_pairs_to_intervals(create_track_pairs(tracks, all_different_source=all_different_source),interval_length_h=4500))
         colocated, not_colocated = [], []
         for row in data:
                 (not_colocated,colocated)[is_colocated(row[0],row[1])].append(row)
-        if response_H_d_pairs == 'y':
-            pass
-        else:
-            not_colocated = random.sample(not_colocated, k=5 * len(colocated))
         data = colocated + not_colocated
 
         # Create an experiment setup using run_pipeline as the evaluation function
@@ -170,7 +193,8 @@ def main():
             model_name = parameters['model'].__class__.__name__
 
             if model_name == 'MarkovChain':
-                model_name = model_name + "_" + parameters['model'].get_distance()
+                model_name = (model_name + "_" + parameters['model'].get_distance() + "_" +
+                              parameters['model'].get_state_space_level() + "_" + parameters['model'].get_prior_type())
                 print(f"{model_name}: {predicted_lrs}")
                 unique_dir = f"{model_name}" + datetime.now().strftime(
                     "%Y-%m-%d %H_%M_%S")

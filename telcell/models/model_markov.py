@@ -32,12 +32,18 @@ class MarkovChain(Model):
     def get_distance(self):
         return self.distance
 
+    def get_state_space_level(self):
+        return self.state_space_level
+
+    def get_prior_type(self):
+        return self.prior_type
+
     def __init__(
             self,
             df_train,
             cell_file,
             bounding_box,
-            output_histogram_path,
+            output_path,
             state_space='Omega',
             state_space_level='postal2',
             distance='frobenius',
@@ -54,14 +60,15 @@ class MarkovChain(Model):
         self.state_space_level=state_space_level
         self.markov_type=markov_type
         self.loops_allowed = loops_allowed
-        self.output_histogram_path = output_histogram_path
+        self.prior_type = prior_type
+        self.output_path = output_path/self.distance/self.state_space_level/self.prior_type
 
         # Transform the data to a dataframe with owner, device, timestamp, postal_code
         self.data = MC.transform_data(df_train,state_space_level)
         # Construct the state space.
         self.construct_state_space(state_space,state_space_level,antenna_type)
         # Construct the prior matrix, so that we can use it for estimating our movement matrices.
-        self.construct_prior(prior_type)
+        self.construct_prior(self.prior_type)
 
         # Construct the Markov chains for each device.
         list_Markov_chains = []
@@ -131,7 +138,7 @@ class MarkovChain(Model):
 
     def calculate_score(self,distance,matrix1,matrix2,count_vector=None,count_matrix=None):
         # Calculate the distance
-        if distance == 'cut_distance_genetic':
+        if distance == 'genetic_cut_distance':
             return MC.genetic_cut_distance(matrix_normal=matrix1,matrix_burner=matrix2)
         elif distance == 'freq_distance':
             return MC.frequent_transition_distance(matrix_normal=matrix1, matrix_burner=matrix2,count_data=count_vector)
@@ -139,8 +146,8 @@ class MarkovChain(Model):
             return MC.frobenius_norm(matrix_normal=matrix1,matrix_burner=matrix2)
         elif distance == 'trace':
             return MC.trace_norm(matrix_normal=matrix1,matrix_burner=matrix2)
-        elif distance == 'cut_distance':
-            return MC.important_states_cut_distance_5(matrix_normal=matrix1,matrix_burner=matrix2,count_data=count_vector)
+        elif distance == 'restricted_cut_distance':
+            return MC.restricted_cut_distance(matrix_normal=matrix1,matrix_burner=matrix2,count_data=count_vector)
         elif distance == 'important_cut_distance':
             return MC.important_states_cut_distance(matrix_normal=matrix1,matrix_burner=matrix2,count_data=count_vector)
         elif distance == 'GLR_distance':
@@ -176,16 +183,16 @@ class MarkovChain(Model):
                                                                                              count_vector=self.df_Markov_chains.loc[row['phone1']].loc['count_data'],
                                                                                              count_matrix=self.df_Markov_chains.loc[row['phone2']].loc['count_matrices']),axis=1)
 
-        os.makedirs(self.output_histogram_path, exist_ok=True)
+        os.makedirs(self.output_path, exist_ok=True)
 
         example_markov_chain = self.df_Markov_chains.iloc[0].loc['markov_chains']
         shape = np.shape(example_markov_chain)
         states = self.df_Markov_chains.iloc[0].loc['markov_chains'].columns
-        with open(self.output_histogram_path / "state_space.txt", "w") as f:
+        with open(self.output_path / "state_space.txt", "w") as f:
             f.write(f'shape of the state space: {shape}\n')
             f.write(f'state space: {states}\n')
 
-        MC.distance_histograms(df_reference[df_reference['hypothesis']==1]['score'],df_reference[df_reference['hypothesis']==0]['score'],self.output_histogram_path/f'{self.distance}',self.distance)
+        MC.distance_histograms(df_reference[df_reference['hypothesis']==1]['score'],df_reference[df_reference['hypothesis']==0]['score'],self.output_path)
 
         # Clear the matrices from memory
         del self.df_Markov_chains

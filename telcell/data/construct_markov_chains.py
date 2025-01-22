@@ -187,11 +187,11 @@ def continuous_markov_chain():
     raise NotImplementedError
 
 
-def distance_histograms(distances_Hp, distances_Hd,output_path,distance_function):
+def distance_histograms(distances_Hp, distances_Hd, output_path):
     os.makedirs(output_path, exist_ok=True)
-    plt.hist(distances_Hp, bins=20, alpha=.5,color='#377eb8',density=True,label='Hp')
-    plt.hist(distances_Hd, bins=20, alpha=.5,color='#ff7f00',density=True,label='Hd')
-    plt.title(f'A density plot showing the score distributions\n for the {distance_function} of both Hp and Hd pairs')
+    plt.hist(distances_Hp, bins=10, alpha=.5,color='#377eb8',density=True,label='Hp')
+    plt.hist(distances_Hd, bins=10, alpha=.5,color='#ff7f00',density=True,label='Hd')
+    plt.title('The score histograms of both Hp and Hd pairs')
     plt.xlabel('score')
     plt.ylabel('density')
     plt.legend()
@@ -200,9 +200,13 @@ def distance_histograms(distances_Hp, distances_Hd,output_path,distance_function
 
     with open(output_path / "statistics.txt", "w") as f:
         f.write(f'Hp mean: {np.mean(distances_Hp):.3f}\n')
-        f.write(f'Hp variance: {np.var(distances_Hp):.3f}\n')
+        f.write(f'Hp var: {np.var(distances_Hp):.3f}\n')
+        f.write(f'Hp min: {np.min(distances_Hp):.3f}\n')
+        f.write(f'Hp max: {np.max(distances_Hp):.3f}\n')
         f.write(f'Hd mean: {np.mean(distances_Hd):.3f}\n')
         f.write(f'Hd var: {np.var(distances_Hd):.3f}\n')
+        f.write(f'Hd min: {np.min(distances_Hd):.3f}\n')
+        f.write(f'Hd max: {np.max(distances_Hd):.3f}\n')
 
 
 
@@ -291,7 +295,7 @@ def genetic_cut_distance(matrix_normal,matrix_burner) -> float:
     return (1/len(states))*cut_distance(best_ind,matrix_normal, matrix_burner,states)[0]
 
 
-def important_states_cut_distance_5(matrix_normal,matrix_burner,count_data) -> float:
+def restricted_cut_distance(matrix_normal,matrix_burner,count_data) -> float:
     # Expects two matrices that need to be compared.
     # Looks at the 5 most important states based on the stationary distribution.
     # Then it calculates the maximum cut distance for all possible combinations of these 5 states.
