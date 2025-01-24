@@ -71,21 +71,14 @@ def transform_data(df_observations, level) -> pd.DataFrame:
     return df_observations
 
 
-def state_space_Omega(cell_file,bounding_box,antenna_type,level='postal2') -> np.array:
+def state_space_Omega(cell_file,antenna_type,level='postal2') -> np.array:
     # Needs a file with all the antennas, the region, the antenna_type and the level that is being considered.
     # Will return a np.array with possible states that the phones can visit.
     df_cell = pd.read_csv(cell_file)
     #drop useless columns
-    df_cell = df_cell[['HOOFDSOORT','X','Y','POSTCODE']]
+    df_cell = df_cell[['HOOFDSOORT','POSTCODE']]
     #drop types except the antenna_type
     df_cell = df_cell.loc[df_cell['HOOFDSOORT'] == antenna_type]
-         #Transform to wgs84
-    df_cell['lat'], df_cell['lon'] = Transformer.from_crs("EPSG:28992", "EPSG:4979").transform(df_cell['X'],
-                                                                                                   df_cell['Y'])
-    # Only keep cell towers in bounding box
-    df_cell = df_cell.loc[
-            (df_cell['lon'] >= bounding_box[0]-0.01) & (df_cell['lon'] <= bounding_box[2]+0.01)
-            & (df_cell['lat'] >= bounding_box[1]-0.01) & (df_cell['lat'] <= bounding_box[3]+0.01)]
 
     if level == 'antenna':
         return np.sort(np.unique(df_cell['POSTCODE'].dropna()))

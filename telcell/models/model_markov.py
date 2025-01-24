@@ -42,7 +42,6 @@ class MarkovChain(Model):
             self,
             df_train,
             cell_file,
-            bounding_box,
             output_path,
             state_space='Omega',
             state_space_level='postal2',
@@ -55,7 +54,6 @@ class MarkovChain(Model):
     ) -> None:
         # Set global parameters
         self.cell_file = cell_file
-        self.bounding_box = bounding_box
         self.distance = distance
         self.state_space_level=state_space_level
         self.markov_type=markov_type
@@ -99,8 +97,7 @@ class MarkovChain(Model):
     def construct_state_space(self,state_space,state_space_level,antenna_type):
         # Construct the state space
         if state_space == 'Omega':  # Select all the antennas/postal/postal3 codes in the bounding box
-            self.state_space = MC.state_space_Omega(self.cell_file, self.bounding_box,antenna_type,
-                                                    state_space_level)
+            self.state_space = MC.state_space_Omega(self.cell_file,antenna_type, state_space_level)
         elif state_space == 'observations':  # Select the antennas/postal/postal3 codes that were observed by either of the phones.
             self.state_space = MC.state_space_observations(self.data)
         else:
