@@ -193,11 +193,11 @@ def distance_histograms(distances_Hp, distances_Hd, output_path):
 
     with open(output_path / "statistics.txt", "w") as f:
         f.write(f'Hp mean: {np.mean(distances_Hp):.3f}\n')
-        f.write(f'Hp var: {np.var(distances_Hp):.3f}\n')
+        f.write(f'Hp std: {np.std(distances_Hp):.3f}\n')
         f.write(f'Hp min: {np.min(distances_Hp):.3f}\n')
         f.write(f'Hp max: {np.max(distances_Hp):.3f}\n')
         f.write(f'Hd mean: {np.mean(distances_Hd):.3f}\n')
-        f.write(f'Hd var: {np.var(distances_Hd):.3f}\n')
+        f.write(f'Hd std: {np.std(distances_Hd):.3f}\n')
         f.write(f'Hd min: {np.min(distances_Hd):.3f}\n')
         f.write(f'Hd max: {np.max(distances_Hd):.3f}\n')
 
