@@ -14,11 +14,11 @@ from sklearn.model_selection import GroupKFold, GroupShuffleSplit
 from telcell.models.model_count import Count
 from telcell.models.model_count_ELUB import Count_ELUB
 from telcell.models.model_regression import Regression
-from telcell.models.rare_pair_feature_based import RarePairModel
+# from telcell.models.rare_pair_feature_based import RarePairModel
 from telcell.models.model_markov import MarkovChain
 
 from telcell.data.parsers import parse_measurements_csv
-from telcell.data.utils import check_header_for_postal_code, add_postal_code, calculate_bounding_box
+from telcell.data.utils import check_header_for_postal_code, add_postal_code
 from telcell.pipeline import run_pipeline
 from telcell.utils.savefile import make_output_plots, write_lrs
 from telcell.utils.transform import slice_track_pairs_to_intervals, create_track_pairs, is_colocated
@@ -48,8 +48,9 @@ def main():
 
     # args for feature based
     bins = ([0, 0], [1, 20], [21, 40], [41, 60], [61, 120])
-    coverage_models = pickle.load(open('data/coverage_model', 'rb'))
+    # coverage_models = pickle.load(open('data/coverage_model', 'rb'))
 
+    # args for Markov chain method
     cell_file = "tests/20191202131001.csv"
     markov_frobenius_2_u = ['postal2', 'Frobenius_norm','uniform']
     markov_frobenius_2_ob = ['postal2', 'Frobenius_norm', 'overall objective']
@@ -61,7 +62,7 @@ def main():
     markov_cut_distance_3_u = ['postal3', 'restricted_cut_distance','uniform']
     markov_cut_distance_3_ob = ['postal3', 'restricted_cut_distance','overall objective']
 
-    # Check whether the files have 'cellinfo.postal_code' column.
+    # Check whether the input file has 'cellinfo.postal_code' column.
     for file in [output_cell_file]:  # Makes sure that the column cellinfo.postal_code is available
         if check_header_for_postal_code(file):
             pass
