@@ -204,9 +204,10 @@ def distance_histograms(distances_Hp, distances_Hd, output_path):
 
 
 def create_pairs(owner_dict) -> (list[list],list[list]):
-    # Expects a dictinairy filled with keys: owners, object: phones.
+    # Expects a dictionairy filled with keys: owners, object: phones.
     # Return a list with all possible pairs of items of a list.
     # Will only return (a,b) and not (b,a), where a,b are items in the list.
+
     # Initialize an empty list to store the pairs and their labels
     pairs_with_labels_H_p = []
     pairs_with_labels_H_d = []

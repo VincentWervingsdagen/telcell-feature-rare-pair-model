@@ -28,10 +28,20 @@ class Count_ELUB(Model):
 
     ELUB_bounder: lir.ELUBbounder(lir.DummyProbabilityCalibrator)
 
-    def __init__(self,training_set):
+    def __init__(self,training_set,state_space='postal3'):
         # Group the phones together per owner, this allows for owners having multiple phones.
+        if state_space == 'antenna':
+            data = transform_data(training_set,'antenna')
+        elif state_space == 'postal':
+            data = transform_data(training_set, 'postal')
+        elif state_space == 'postal3':
+            data = transform_data(training_set, 'postal3')
+        elif state_space == 'postal2':
+            data = transform_data(training_set, 'postal2')
+        else:
+            raise ValueError(
+                'The specified state space level is not implemented. Please choose either antenna,postal,postal3')
 
-        data = transform_data(training_set,'postal3')
         list_devices = np.unique(data['device'])
         owner_groups = defaultdict(list)
 

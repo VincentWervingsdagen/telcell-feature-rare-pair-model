@@ -123,7 +123,8 @@ def main():
                                     output_path=output_dir_fold, response_ELUB=response_ELUB,
                                     state_space_level=markov_cut_distance_3_ob[0], distance=markov_cut_distance_3_ob[1],
                                     prior_type=markov_cut_distance_3_ob[2]),
-                         Count_ELUB(training_set=data_train),
+                         Count_ELUB(training_set=data_train, state_space = 'postal2'),
+                         Count_ELUB(training_set=data_train, state_space = 'postal3')
         ]
 
         # Loading data
