@@ -27,9 +27,15 @@ class Count_ELUB(Model):
     """
 
     ELUB_bounder: lir.ELUBbounder(lir.DummyProbabilityCalibrator)
+    state_space: str
+
+    def get_state_space(self):
+        return self.state_space
 
     def __init__(self,training_set,state_space='postal3'):
         # Group the phones together per owner, this allows for owners having multiple phones.
+        self.state_space = state_space
+
         if state_space == 'antenna':
             data = transform_data(training_set,'antenna')
         elif state_space == 'postal':

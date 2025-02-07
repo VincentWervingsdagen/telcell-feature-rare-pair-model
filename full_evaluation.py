@@ -92,37 +92,37 @@ def main():
         # ]
 
         models_period = [
-                         MarkovChain(df_train=data_train,cell_file=cell_file,
-                                     output_path=output_dir_fold,response_ELUB=response_ELUB,
-                                     state_space_level=markov_frobenius_2_u[0],distance=markov_frobenius_2_u[1],prior_type=markov_frobenius_2_u[2]),
-                         MarkovChain(df_train=data_train, cell_file=cell_file,
-                                    output_path=output_dir_fold, response_ELUB=response_ELUB,
-                                    state_space_level=markov_frobenius_2_ob[0], distance=markov_frobenius_2_ob[1],
-                                    prior_type=markov_frobenius_2_ob[2]),
-                         MarkovChain(df_train=data_train, cell_file=cell_file,
-                                    output_path=output_dir_fold, response_ELUB=response_ELUB,
-                                    state_space_level=markov_frobenius_3_u[0], distance=markov_frobenius_3_u[1],
-                                    prior_type=markov_frobenius_3_u[2]),
-                         MarkovChain(df_train=data_train, cell_file=cell_file,
-                                    output_path=output_dir_fold, response_ELUB=response_ELUB,
-                                    state_space_level=markov_frobenius_3_ob[0], distance=markov_frobenius_3_ob[1],
-                                    prior_type=markov_frobenius_3_ob[2]),
-                         MarkovChain(df_train=data_train, cell_file=cell_file,
-                                    output_path=output_dir_fold, response_ELUB=response_ELUB,
-                                    state_space_level=markov_cut_distance_2_u[0], distance=markov_cut_distance_2_u[1],
-                                    prior_type=markov_cut_distance_2_u[2]),
-                         MarkovChain(df_train=data_train, cell_file=cell_file,
-                                    output_path=output_dir_fold, response_ELUB=response_ELUB,
-                                    state_space_level=markov_cut_distance_2_ob[0], distance=markov_cut_distance_2_ob[1],
-                                    prior_type=markov_cut_distance_2_ob[2]),
-                         MarkovChain(df_train=data_train, cell_file=cell_file,
-                                    output_path=output_dir_fold, response_ELUB=response_ELUB,
-                                    state_space_level=markov_cut_distance_3_u[0], distance=markov_cut_distance_3_u[1],
-                                    prior_type=markov_cut_distance_3_u[2]),
-                         MarkovChain(df_train=data_train, cell_file=cell_file,
-                                    output_path=output_dir_fold, response_ELUB=response_ELUB,
-                                    state_space_level=markov_cut_distance_3_ob[0], distance=markov_cut_distance_3_ob[1],
-                                    prior_type=markov_cut_distance_3_ob[2]),
+                         # MarkovChain(df_train=data_train,cell_file=cell_file,
+                         #             output_path=output_dir_fold,response_ELUB=response_ELUB,
+                         #             state_space_level=markov_frobenius_2_u[0],distance=markov_frobenius_2_u[1],prior_type=markov_frobenius_2_u[2]),
+                         # MarkovChain(df_train=data_train, cell_file=cell_file,
+                         #            output_path=output_dir_fold, response_ELUB=response_ELUB,
+                         #            state_space_level=markov_frobenius_2_ob[0], distance=markov_frobenius_2_ob[1],
+                         #            prior_type=markov_frobenius_2_ob[2]),
+                         # MarkovChain(df_train=data_train, cell_file=cell_file,
+                         #            output_path=output_dir_fold, response_ELUB=response_ELUB,
+                         #            state_space_level=markov_frobenius_3_u[0], distance=markov_frobenius_3_u[1],
+                         #            prior_type=markov_frobenius_3_u[2]),
+                         # MarkovChain(df_train=data_train, cell_file=cell_file,
+                         #            output_path=output_dir_fold, response_ELUB=response_ELUB,
+                         #            state_space_level=markov_frobenius_3_ob[0], distance=markov_frobenius_3_ob[1],
+                         #            prior_type=markov_frobenius_3_ob[2]),
+                         # MarkovChain(df_train=data_train, cell_file=cell_file,
+                         #            output_path=output_dir_fold, response_ELUB=response_ELUB,
+                         #            state_space_level=markov_cut_distance_2_u[0], distance=markov_cut_distance_2_u[1],
+                         #            prior_type=markov_cut_distance_2_u[2]),
+                         # MarkovChain(df_train=data_train, cell_file=cell_file,
+                         #            output_path=output_dir_fold, response_ELUB=response_ELUB,
+                         #            state_space_level=markov_cut_distance_2_ob[0], distance=markov_cut_distance_2_ob[1],
+                         #            prior_type=markov_cut_distance_2_ob[2]),
+                         # MarkovChain(df_train=data_train, cell_file=cell_file,
+                         #            output_path=output_dir_fold, response_ELUB=response_ELUB,
+                         #            state_space_level=markov_cut_distance_3_u[0], distance=markov_cut_distance_3_u[1],
+                         #            prior_type=markov_cut_distance_3_u[2]),
+                         # MarkovChain(df_train=data_train, cell_file=cell_file,
+                         #            output_path=output_dir_fold, response_ELUB=response_ELUB,
+                         #            state_space_level=markov_cut_distance_3_ob[0], distance=markov_cut_distance_3_ob[1],
+                         #            prior_type=markov_cut_distance_3_ob[2]),
                          Count_ELUB(training_set=data_train, state_space = 'postal2'),
                          Count_ELUB(training_set=data_train, state_space = 'postal3')
         ]
@@ -197,6 +197,11 @@ def main():
                 print(f"{model_name}: {predicted_lrs}")
                 unique_dir = f"{model_name}" + datetime.now().strftime(
                     "%Y-%m-%d %H_%M_%S")
+            elif model_name == 'Count_ELUB':
+                model_name = (model_name + "_" + parameters['model'].get_state_space() + "-")
+                print(f"{model_name}: {predicted_lrs}")
+                unique_dir = f"{model_name}" + datetime.now().strftime(
+                        "%Y-%m-%d %H_%M_%S")
             else:
                 print(f"{model_name}: {predicted_lrs}")
                 unique_dir = f"{model_name}-" + datetime.now().strftime(
@@ -219,7 +224,6 @@ def main():
 
     if response_cross_validation == 'y':
         bounds = (df_results.loc[:,df_results.columns!='y_true'].min().min(),df_results.loc[:,df_results.columns!='y_true'].max().max())
-        print(bounds)
         for model in [col for col in df_results.columns if col != 'y_true']:
             output_dir = main_output_dir / "total" / model
             make_output_plots(df_results[model],df_results['y_true'],bounds,output_dir,ignore_missing_lrs=False)
